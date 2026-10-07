@@ -1,0 +1,202 @@
+{
+  "runAt": "2026-10-07T19:10:34.061Z",
+  "provider": "ollama",
+  "model": "llama3.1",
+  "promptVersion": "v1",
+  "retrieval": "keyword",
+  "summary": {
+    "validityRate": 0.7857142857142857,
+    "firstPassRate": 0.42857142857142855,
+    "fileRecall": 0.475,
+    "retrievalRecall": 0.891025641025641,
+    "hallucinatedFileRate": 0.1212121212121212,
+    "vagueAskedQuestions": true,
+    "avgSeconds": 10.895
+  },
+  "cases": [
+    {
+      "id": "openai-provider",
+      "valid": false,
+      "attempts": 1,
+      "ms": 12238,
+      "fileRecall": null,
+      "retrievalRecall": 1,
+      "hallucinatedFiles": null,
+      "askedQuestions": null,
+      "files": [],
+      "error": "Ollama error 500"
+    },
+    {
+      "id": "truncation-warning",
+      "valid": true,
+      "attempts": 2,
+      "ms": 12276,
+      "retrievalRecall": 0.3333333333333333,
+      "fileRecall": 0,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/prompts.ts"
+      ]
+    },
+    {
+      "id": "retry-count",
+      "valid": false,
+      "attempts": 2,
+      "ms": 11848,
+      "fileRecall": null,
+      "retrievalRecall": 1,
+      "hallucinatedFiles": null,
+      "askedQuestions": null,
+      "files": [],
+      "error": "The model returned invalid output twice (description: Too small: expected string to have >=1 characters). Try a larger model."
+    },
+    {
+      "id": "markdown-export",
+      "valid": true,
+      "attempts": 1,
+      "ms": 9225,
+      "retrievalRecall": 1,
+      "fileRecall": 0.5,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/export/exporters.ts"
+      ]
+    },
+    {
+      "id": "priority-field",
+      "valid": true,
+      "attempts": 2,
+      "ms": 12728,
+      "retrievalRecall": 0.75,
+      "fileRecall": 0.25,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/export/exporters.ts"
+      ]
+    },
+    {
+      "id": "indexeddb",
+      "valid": false,
+      "attempts": 2,
+      "ms": 11382,
+      "fileRecall": null,
+      "retrievalRecall": 1,
+      "hallucinatedFiles": null,
+      "askedQuestions": null,
+      "files": [],
+      "error": "The model returned invalid output twice (description: Too small: expected string to have >=1 characters). Try a larger model."
+    },
+    {
+      "id": "latency-display",
+      "valid": true,
+      "attempts": 2,
+      "ms": 10659,
+      "retrievalRecall": 1,
+      "fileRecall": 0,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/ticketAgent.ts"
+      ]
+    },
+    {
+      "id": "skip-tests",
+      "valid": true,
+      "attempts": 1,
+      "ms": 9190,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/repo/repo.ts"
+      ]
+    },
+    {
+      "id": "edit-profile",
+      "valid": true,
+      "attempts": 1,
+      "ms": 8647,
+      "retrievalRecall": 0.5,
+      "fileRecall": 0.5,
+      "hallucinatedFiles": 0.3333333333333333,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/ticketAgent.ts",
+        "src/repo/repo.ts",
+        "src/UI/repoProfileEditor.tsx"
+      ]
+    },
+    {
+      "id": "ollama-streaming",
+      "valid": true,
+      "attempts": 1,
+      "ms": 10019,
+      "retrievalRecall": 1,
+      "fileRecall": 0.5,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/llm/providers.ts",
+        "src/agent/askForJSON.ts"
+      ]
+    },
+    {
+      "id": "jira-escaping",
+      "valid": true,
+      "attempts": 1,
+      "ms": 7011,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/export/exporters.ts"
+      ]
+    },
+    {
+      "id": "embeddings",
+      "valid": true,
+      "attempts": 2,
+      "ms": 15649,
+      "retrievalRecall": 1,
+      "fileRecall": 0,
+      "hallucinatedFiles": 1,
+      "askedQuestions": null,
+      "files": [
+        "repo/repo.ts",
+        "llm/providers.ts"
+      ]
+    },
+    {
+      "id": "remember-model",
+      "valid": true,
+      "attempts": 2,
+      "ms": 13293,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/App.tsx"
+      ]
+    },
+    {
+      "id": "vague",
+      "valid": true,
+      "attempts": 1,
+      "ms": 8365,
+      "retrievalRecall": null,
+      "fileRecall": null,
+      "hallucinatedFiles": 0,
+      "askedQuestions": true,
+      "files": [
+        "src/App.tsx",
+        "src/agent/ticketAgent.ts"
+      ]
+    }
+  ]
+}

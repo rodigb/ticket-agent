@@ -11,7 +11,7 @@ interface Case { id: string; requirement: string; expectedFiles: string[]; vague
 interface CaseResult {
   id: string; valid: boolean; attempts: number; ms: number;
   fileRecall: number | null; retrievalRecall: number | null; hallucinatedFiles: number | null;
-  askedQuestions: boolean | null; files: string[]; error?: string;
+  askedQuestions: boolean | null; files: string[]; error?: string; errorKind?: 'validation' | 'infra';
 }
 
 const ROOT = process.cwd();
@@ -40,7 +40,12 @@ function indexLocal(): RepoMemory {
 }
 
 const norm = (f: string) => f.replace(/^\.?\//, '');
-const hit = (found: string[], want: string) => found.some((f) => norm(f) === want || norm(f).endsWith(want));
+// Map a path the model wrote onto a real repo path, so "repo/repo.ts" counts as "src/repo/repo.ts".
+const resolve = (f: string, paths: string[]): string | null => {
+  const n = norm(f);
+  return paths.find((p) => p === n) ?? paths.find((p) => p.endsWith('/' + n)) ?? null;
+};
+const hit = (found: string[], want: string, paths: string[]) => found.some((f) => resolve(f, paths) === want);
 const mean = (xs: (number | null)[]) => {
   const v = xs.filter((x): x is number => x !== null);
   return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
@@ -63,23 +68,24 @@ async function main() {
     const t0 = Date.now();
     let attempts = 0;
     const retrieved = [...new Set(retrieve(memory, c.requirement).map((x) => x.path))];
-    const retrievalRecall = c.vague ? null : c.expectedFiles.filter((f) => hit(retrieved, f)).length / c.expectedFiles.length;
+    const retrievalRecall = c.vague ? null : c.expectedFiles.filter((f) => hit(retrieved, f, memory.paths)).length / c.expectedFiles.length;
     try {
       const t = await generateTicket({ requirement: c.requirement, memory, llm, onAttempt: (n) => (attempts = n) });
       results.push({
         id: c.id, valid: true, attempts, ms: Date.now() - t0, retrievalRecall,
-        fileRecall: c.vague ? null : c.expectedFiles.filter((f) => hit(t.affectedFiles, f)).length / c.expectedFiles.length,
-        hallucinatedFiles: t.affectedFiles.length ? t.affectedFiles.filter((f) => !memory.paths.includes(norm(f))).length / t.affectedFiles.length : null,
+        fileRecall: c.vague ? null : c.expectedFiles.filter((f) => hit(t.affectedFiles, f, memory.paths)).length / c.expectedFiles.length,
+        hallucinatedFiles: t.affectedFiles.length ? t.affectedFiles.filter((f) => resolve(f, memory.paths) === null).length / t.affectedFiles.length : null,
         askedQuestions: c.vague ? t.openQuestions.length > 0 : null,
         files: t.affectedFiles,
       });
     } catch (e) {
-      results.push({ id: c.id, valid: false, attempts, ms: Date.now() - t0, fileRecall: null, retrievalRecall, hallucinatedFiles: null, askedQuestions: null, files: [], error: e instanceof Error ? e.message : String(e) });
+      results.push({ id: c.id, valid: false, attempts, ms: Date.now() - t0, fileRecall: null, retrievalRecall, hallucinatedFiles: null, askedQuestions: null, files: [], error: e instanceof Error ? e.message : String(e), errorKind: e instanceof Error && e.message.startsWith('The model returned invalid output') ? 'validation' : 'infra' });
     }
     console.log(`${c.id}: ${results.at(-1)!.valid ? 'ok' : 'INVALID'}`);
   }
 
   const summary = {
+    infraErrors: results.filter((r) => r.errorKind === 'infra').length,
     validityRate: results.filter((r) => r.valid).length / results.length,
     firstPassRate: results.filter((r) => r.valid && r.attempts === 1).length / results.length,
     fileRecall: mean(results.map((r) => r.fileRecall)),
@@ -89,7 +95,7 @@ async function main() {
     avgSeconds: results.reduce((a, r) => a + r.ms, 0) / results.length / 1000,
   };
   console.table({
-    'valid output': pct(summary.validityRate), 'valid first try': pct(summary.firstPassRate),
+    'valid output': pct(summary.validityRate), 'infra errors': String(summary.infraErrors), 'valid first try': pct(summary.firstPassRate),
     'file recall (ticket)': pct(summary.fileRecall), 'file recall (retrieval alone)': pct(summary.retrievalRecall),
     'invented files': pct(summary.hallucinatedFileRate), 'vague req asks questions': String(summary.vagueAskedQuestions),
     'avg seconds': summary.avgSeconds.toFixed(1),
