@@ -1,9 +1,10 @@
 import type { Chunk, RepoMemory } from '../types';
 
 const GH = 'https://api.github.com';
+const RAW = 'https://raw.githubusercontent.com';
 export const SKIP = /(^|\/)(node_modules|dist|build|\.git|vendor)\/|\.(png|jpe?g|gif|svg|ico|lock|woff2?|pdf|zip|map)$|\.min\./i;
 export const KEY = /(^|\/)(README\.md|package\.json|pyproject\.toml|requirements\.txt|go\.mod|pom\.xml|Dockerfile|CONTRIBUTING\.md)$/i;
-const MEM_KEY = (repo: string) => `ticket-agent:memory:${repo}`;
+const MEM_KEY = (repo: string) => `ticket-agent:memory:${repo.toLowerCase()}`;
 
 // Only the GitHub API fields we actually use
 interface GitHubRepoMeta { default_branch: string; description: string | null }
@@ -17,6 +18,23 @@ export function chunkFile(path: string, text: string): Chunk[] {
   return out;
 }
 
+// Turns a failed GitHub response into something the user can act on.
+export function describeGitHubError(status: number, headers: { get(name: string): string | null }): string {
+  if (status === 404) return 'Repository not found. Check the URL, or add a GitHub token if it is private.';
+  if (status === 401) return 'GitHub rejected the token. Check it and try again.';
+  if ((status === 403 || status === 429) && headers.get('x-ratelimit-remaining') === '0') {
+    const reset = Number(headers.get('x-ratelimit-reset'));
+    const when = reset
+      ? ` Try again after ${new Date(reset * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, or add a GitHub token.`
+      : ' Add a GitHub token or try again later.';
+    return `GitHub rate limit reached.${when}`;
+  }
+  if (status === 403) return 'GitHub refused the request. A token with access to this repository may be needed.';
+  return `GitHub returned an error (${status}).`;
+}
+
+const encodePath = (path: string): string => path.split('/').map(encodeURIComponent).join('/');
+
 export async function indexRepo(
   repo: string,
   token: string,
@@ -26,8 +44,19 @@ export async function indexRepo(
 
   const get = async (url: string, extra: Record<string, string> = {}): Promise<Response> => {
     const r = await fetch(url, { headers: { ...auth, ...extra } });
-    if (!r.ok) throw new Error(`GitHub ${r.status} for ${url}`);
+    if (!r.ok) throw new Error(describeGitHubError(r.status, r.headers));
     return r;
+  };
+
+  // With a token, read through the API (5,000 requests an hour). Without one, the API allows only 60 an hour,
+  // so file contents come from raw.githubusercontent.com, which is not part of that quota.
+  const readFile = async (path: string, branch: string): Promise<string> => {
+    if (token) {
+      return (await get(`${GH}/repos/${repo}/contents/${encodePath(path)}`, { Accept: 'application/vnd.github.raw' })).text();
+    }
+    const r = await fetch(`${RAW}/${repo}/${encodePath(branch)}/${encodePath(path)}`);
+    if (!r.ok) throw new Error(`Could not read ${path} from GitHub (${r.status}).`);
+    return r.text();
   };
 
   const meta: GitHubRepoMeta = await (await get(`${GH}/repos/${repo}`)).json();
@@ -46,9 +75,7 @@ export async function indexRepo(
   const chunks: Chunk[] = [];
   for (let i = 0; i < chosen.length; i++) {
     onProgress?.(i + 1, chosen.length);
-    const text = await (
-      await get(`${GH}/repos/${repo}/contents/${chosen[i].path}`, { Accept: 'application/vnd.github.raw' })
-    ).text();
+    const text = await readFile(chosen[i].path, meta.default_branch);
     chunks.push(...chunkFile(chosen[i].path, text));
   }
 

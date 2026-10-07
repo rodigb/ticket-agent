@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { PROVIDERS, listOllamaModels } from "../llm/providers";
 import { indexRepo, loadMemory, saveMemory } from "../repo/repo";
+import { parseRepoInput } from "../repo/parseRepo";
 import { buildProfile, generateTicket } from "../agent/ticketAgent";
 import { loadSkillsBrowser } from "../agent/loadSkillsBrowser";
 import { pickSkills } from "../agent/skills";
@@ -19,24 +20,26 @@ import type {
 } from "../types";
 
 const styles = {
-  page: "mx-auto max-w-3xl px-5 pt-10 pb-16 text-slate-900 dark:text-slate-100",
-  back: "mb-4 inline-block text-sm text-blue-700 hover:underline dark:text-blue-400",
+  page: "relative mx-auto max-w-3xl px-5 pt-10 pb-16 text-body",
+  topBar: "mb-4 flex items-center justify-between",
+  back: "text-sm text-accent hover:underline",
+  cog: "rounded-full p-2 text-muted transition-colors hover:bg-surface hover:text-body focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
   title: "text-3xl font-semibold tracking-tight",
-  subtitle: "mt-1 mb-8 text-slate-500 dark:text-slate-400",
-  section: "border-t border-slate-200 py-5 dark:border-slate-800",
+  subtitle: "mt-1 mb-8 text-muted",
+  section: "border-t border-line py-5",
   sectionTitle: "mb-2 text-lg font-semibold",
   row: "mb-2 flex flex-wrap gap-2",
   control:
-    "mb-2 rounded-md border border-slate-300 bg-transparent px-3 py-2 text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-slate-700 dark:text-slate-100",
+    "mb-2 rounded-md border border-line bg-transparent px-3 py-2 text-body focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
   rowControl: "grow basis-40",
   fullControl: "w-full",
   button:
-    "rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-40",
+    "rounded-md bg-accent px-4 py-2 font-medium text-accent-foreground hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40",
   secondaryButton:
-    "rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800",
-  note: "text-sm text-slate-500 dark:text-slate-400",
+    "rounded-md border border-line px-3 py-2 text-sm hover:bg-surface",
+  note: "text-sm text-muted",
   error: "text-red-700 dark:text-red-400",
-  ticket: "mt-4 rounded-lg border border-slate-200 p-5 dark:border-slate-800",
+  ticket: "mt-4 rounded-lg border border-line bg-surface p-5",
 };
 
 export default function TicketPage() {
@@ -54,6 +57,8 @@ export default function TicketPage() {
   const [modelsError, setModelsError] = useState<string>("");
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string>("");
+
+  const repoRef = parseRepoInput(repo);
 
   const llm: LLMConfig = { provider, model, apiKey };
 
@@ -95,9 +100,10 @@ export default function TicketPage() {
     }
   };
 
-  const index = () =>
-    run("Reading repo…", async () => {
-      const m = await indexRepo(repo.trim(), ghToken, (i, n) =>
+  const index = () => {
+    if (!repoRef) return;
+    return run("Reading repo…", async () => {
+      const m = await indexRepo(repoRef.slug, ghToken, (i, n) =>
         setStatus(`Reading files ${i}/${n}…`),
       );
       setStatus("Profiling codebase…");
@@ -105,6 +111,7 @@ export default function TicketPage() {
       saveMemory(m);
       setMemory(m);
     });
+  };
 
   const generate = () =>
     run("Writing ticket…", async () => {
@@ -142,9 +149,32 @@ export default function TicketPage() {
 
   return (
     <main className={styles.page}>
-      <Link to={ROUTES.home} className={styles.back}>
-        ← Home
-      </Link>
+      <div className={styles.topBar}>
+        <Link to={ROUTES.home} className={styles.back}>
+          ← Home
+        </Link>
+        <button
+          type="button"
+          className={styles.cog}
+          aria-label="Open settings"
+          onClick={() => setSettingsOpen(true)}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width={22}
+            height={22}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+          </svg>
+        </button>
+      </div>
       <h1 className={styles.title}>Ticket creation</h1>
       <p className={styles.subtitle}>
         Describe the work. Get a ticket that fits your codebase.
@@ -172,28 +202,38 @@ export default function TicketPage() {
         <div className={styles.row}>
           <input
             className={`${styles.control} ${styles.rowControl}`}
-            placeholder="owner/repo"
+            placeholder="GitHub URL or owner/repo"
             value={repo}
             onChange={(e) => {
               setRepo(e.target.value);
-              setMemory(loadMemory(e.target.value.trim()));
+              const ref = parseRepoInput(e.target.value);
+              setMemory(ref ? loadMemory(ref.slug) : null);
             }}
           />
           <input
             className={`${styles.control} ${styles.rowControl}`}
             type="password"
-            placeholder="GitHub token (private repos)"
+            placeholder="GitHub token (optional, for private repos)"
             value={ghToken}
             onChange={(e) => setGhToken(e.target.value)}
           />
           <button
             className={styles.button}
             onClick={index}
-            disabled={!repo || !model || !!status}
+            disabled={!repoRef || !model || !!status}
           >
             {memory ? "Re-index" : "Index repo"}
           </button>
         </div>
+        {repo && !repoRef && (
+          <p className={styles.error}>
+            Enter a GitHub URL such as https://github.com/owner/repo, or
+            owner/repo.
+          </p>
+        )}
+        {repoRef && !memory && (
+          <p className={styles.note}>Will read {repoRef.slug}.</p>
+        )}
         {memory && (
           <div className={styles.note}>
             Remembered {memory.paths.length} files, {memory.chunks.length}{" "}
