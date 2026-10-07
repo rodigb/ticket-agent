@@ -23,10 +23,12 @@ interface GenerateTicketArgs {
   llm: LLMConfig;
   skills: Skill[];
   onAttempt?: (attempt: number) => void;
+  onContext?: (info: { chunkPaths: string[]; skillNames: string[] }) => void;
 }
 
-export function generateTicket({ requirement, memory, llm, skills, onAttempt }: GenerateTicketArgs): Promise<Ticket> {
+export function generateTicket({ requirement, memory, llm, skills, onAttempt, onContext }: GenerateTicketArgs): Promise<Ticket> {
   const context = memory ? retrieve(memory, requirement) : [];
+  onContext?.({ chunkPaths: context.map((c) => c.path), skillNames: skills.map((s) => s.name) });
   return askForJSON(
     llm,
     ticketPrompt({ requirement, profile: memory?.profile ?? null, paths: memory?.paths ?? [], context, skills }),

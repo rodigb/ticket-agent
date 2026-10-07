@@ -22,3 +22,11 @@ export interface RepoMemory {
 }
 
 export type TicketListKey = 'acceptanceCriteria' | 'tasks' | 'affectedFiles' | 'newFiles' | 'risks' | 'openQuestions';
+
+// What went into one ticket generation, shown in the trace panel.
+export interface TraceInfo {
+  chunkPaths: string[];
+  skillNames: string[];
+  attempts: number;
+  seconds: number;
+}

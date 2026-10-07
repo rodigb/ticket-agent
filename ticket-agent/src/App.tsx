@@ -5,22 +5,33 @@ import { buildProfile, generateTicket } from "./agent/ticketAgent";
 import { loadSkillsBrowser } from "./agent/loadSkillsBrowser";
 import { pickSkills } from "./agent/skills";
 import { toJira, toDevOps } from "./export/exporters";
+import { TicketEditor } from "./components/TicketEditor";
+import { TracePanel } from "./components/TracePanel";
 import type {
   LLMConfig,
   ProviderId,
   RepoMemory,
   Ticket,
-  TicketListKey,
+  TraceInfo,
 } from "./types";
 
-const SECTIONS: [string, TicketListKey][] = [
-  ["Acceptance criteria", "acceptanceCriteria"],
-  ["Tasks", "tasks"],
-  ["Affected files", "affectedFiles"],
-  ["New files", "newFiles"],
-  ["Risks", "risks"],
-  ["Open questions", "openQuestions"],
-];
+const styles = {
+  page: "mx-auto max-w-3xl px-5 pt-10 pb-16 text-slate-900 dark:text-slate-100",
+  title: "text-3xl font-semibold tracking-tight",
+  subtitle: "mt-1 mb-8 text-slate-500 dark:text-slate-400",
+  section: "border-t border-slate-200 py-5 dark:border-slate-800",
+  sectionTitle: "mb-2 text-lg font-semibold",
+  row: "mb-2 flex flex-wrap gap-2",
+  control:
+    "mb-2 rounded-md border border-slate-300 bg-transparent px-3 py-2 text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-slate-700 dark:text-slate-100",
+  rowControl: "grow basis-40",
+  fullControl: "w-full",
+  button:
+    "rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-40",
+  note: "text-sm text-slate-500 dark:text-slate-400",
+  error: "text-red-700 dark:text-red-400",
+  ticket: "mt-4 rounded-lg border border-slate-200 p-5 dark:border-slate-800",
+};
 
 export default function App() {
   const [provider, setProvider] = useState<ProviderId>("ollama");
@@ -32,6 +43,7 @@ export default function App() {
   const [memory, setMemory] = useState<RepoMemory | null>(null);
   const [requirement, setRequirement] = useState<string>("");
   const [ticket, setTicket] = useState<Ticket | null>(null);
+  const [trace, setTrace] = useState<TraceInfo | null>(null);
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string>("");
 
@@ -83,14 +95,26 @@ export default function App() {
 
   const generate = () =>
     run("Writing ticket…", async () => {
-      setTicket(
-        await generateTicket({
-          requirement,
-          memory,
-          llm,
-          skills: pickSkills(loadSkillsBrowser(), ["write-ticket"]),
-        }),
-      );
+      const started = Date.now();
+      let attempts = 0;
+      let seen: { chunkPaths: string[]; skillNames: string[] } = {
+        chunkPaths: [],
+        skillNames: [],
+      };
+      const t = await generateTicket({
+        requirement,
+        memory,
+        llm,
+        skills: pickSkills(loadSkillsBrowser(), ["write-ticket"]),
+        onAttempt: (n) => {
+          attempts = n;
+        },
+        onContext: (info) => {
+          seen = info;
+        },
+      });
+      setTicket(t);
+      setTrace({ ...seen, attempts, seconds: (Date.now() - started) / 1000 });
     });
 
   const download = (obj: unknown, name: string) => {
@@ -104,16 +128,17 @@ export default function App() {
   };
 
   return (
-    <main>
-      <h1>Ticket agent</h1>
-      <p className="sub">
+    <main className={styles.page}>
+      <h1 className={styles.title}>Ticket agent</h1>
+      <p className={styles.subtitle}>
         Describe the work. Get a ticket that fits your codebase.
       </p>
 
-      <section>
-        <h2>Model</h2>
-        <div className="row">
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Model</h2>
+        <div className={styles.row}>
           <select
+            className={`${styles.control} ${styles.rowControl}`}
             value={provider}
             onChange={(e) => setProvider(e.target.value as ProviderId)}
           >
@@ -123,7 +148,11 @@ export default function App() {
               </option>
             ))}
           </select>
-          <select value={model} onChange={(e) => setModel(e.target.value)}>
+          <select
+            className={`${styles.control} ${styles.rowControl}`}
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+          >
             {models.map((m) => (
               <option key={m}>{m}</option>
             ))}
@@ -131,6 +160,7 @@ export default function App() {
         </div>
         {PROVIDERS[provider].needsKey && (
           <input
+            className={`${styles.control} ${styles.fullControl}`}
             type="password"
             placeholder="Anthropic API key (kept in this tab only)"
             value={apiKey}
@@ -139,10 +169,11 @@ export default function App() {
         )}
       </section>
 
-      <section>
-        <h2>Repository</h2>
-        <div className="row">
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Repository</h2>
+        <div className={styles.row}>
           <input
+            className={`${styles.control} ${styles.rowControl}`}
             placeholder="owner/repo"
             value={repo}
             onChange={(e) => {
@@ -151,32 +182,39 @@ export default function App() {
             }}
           />
           <input
+            className={`${styles.control} ${styles.rowControl}`}
             type="password"
             placeholder="GitHub token (private repos)"
             value={ghToken}
             onChange={(e) => setGhToken(e.target.value)}
           />
-          <button onClick={index} disabled={!repo || !model || !!status}>
+          <button
+            className={styles.button}
+            onClick={index}
+            disabled={!repo || !model || !!status}
+          >
             {memory ? "Re-index" : "Index repo"}
           </button>
         </div>
         {memory && (
-          <div className="memory">
+          <div className={styles.note}>
             Remembered {memory.paths.length} files, {memory.chunks.length}{" "}
             chunks. Stack: {memory.profile?.stack.join(", ") || "unknown"}.
           </div>
         )}
       </section>
 
-      <section>
-        <h2>Requirement</h2>
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Requirement</h2>
         <textarea
+          className={`${styles.control} ${styles.fullControl}`}
           rows={5}
           placeholder="e.g. Let users reset their password by email"
           value={requirement}
           onChange={(e) => setRequirement(e.target.value)}
         />
         <button
+          className={styles.button}
           onClick={generate}
           disabled={!requirement || !model || !!status}
         >
@@ -184,40 +222,27 @@ export default function App() {
         </button>
       </section>
 
-      {status && <p className="status">{status}</p>}
-      {error && <p className="error">{error}</p>}
+      {status && <p className={styles.note}>{status}</p>}
+      {error && <p className={styles.error}>{error}</p>}
 
       {ticket && (
-        <article>
-          <p className="kind">
-            {ticket.type} · size {ticket.estimate}
-          </p>
-          <h2>{ticket.title}</h2>
-          <p>{ticket.description}</p>
-          {SECTIONS.map(([label, key]) =>
-            ticket[key]?.length ? (
-              <div key={key}>
-                <h3>{label}</h3>
-                <ul>
-                  {ticket[key].map((x, i) => (
-                    <li key={i}>{x}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null,
-          )}
-          <div className="row">
+        <article className={styles.ticket}>
+          <TicketEditor ticket={ticket} onChange={setTicket} />
+          <div className={styles.row}>
             <button
+              className={styles.button}
               onClick={() => download(toJira(ticket), "ticket-jira.json")}
             >
               Export for Jira
             </button>
             <button
+              className={styles.button}
               onClick={() => download(toDevOps(ticket), "ticket-devops.json")}
             >
               Export for Azure DevOps
             </button>
           </div>
+          {trace && <TracePanel trace={trace} />}
         </article>
       )}
     </main>
