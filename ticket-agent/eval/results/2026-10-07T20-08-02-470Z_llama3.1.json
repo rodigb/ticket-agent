@@ -1,0 +1,220 @@
+{
+  "runAt": "2026-10-07T20:08:02.480Z",
+  "provider": "ollama",
+  "model": "llama3.1",
+  "promptVersion": "v3",
+  "skills": [],
+  "skillsHash": "da39a3ee",
+  "repoFiles": 25,
+  "repoHash": "90065b00",
+  "retrieval": "keyword",
+  "summary": {
+    "infraErrors": 2,
+    "validityRate": 0.5,
+    "firstPassRate": 0.2857142857142857,
+    "fileRecall": 0.7083333333333334,
+    "retrievalRecall": 0.5769230769230769,
+    "hallucinatedFileRate": 0,
+    "vagueAskedQuestions": true,
+    "avgSeconds": 54.114642857142854
+  },
+  "cases": [
+    {
+      "id": "openai-provider",
+      "valid": true,
+      "attempts": 1,
+      "ms": 8762,
+      "retrievalRecall": 0.5,
+      "fileRecall": 0.5,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/llm/providers.ts",
+        "src/App.tsx"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "truncation-warning",
+      "valid": false,
+      "attempts": 2,
+      "ms": 315835,
+      "fileRecall": null,
+      "retrievalRecall": 0,
+      "hallucinatedFiles": null,
+      "askedQuestions": null,
+      "files": [],
+      "error": "fetch failed",
+      "errorKind": "infra"
+    },
+    {
+      "id": "retry-count",
+      "valid": false,
+      "attempts": 2,
+      "ms": 15352,
+      "fileRecall": null,
+      "retrievalRecall": 1,
+      "hallucinatedFiles": null,
+      "askedQuestions": null,
+      "files": [],
+      "error": "The model returned invalid output twice (description: Too small: expected string to have >=1 characters). Try a larger model.",
+      "errorKind": "validation"
+    },
+    {
+      "id": "markdown-export",
+      "valid": true,
+      "attempts": 1,
+      "ms": 11288,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/export/exporters.ts",
+        "src/App.tsx"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "priority-field",
+      "valid": true,
+      "attempts": 1,
+      "ms": 11404,
+      "retrievalRecall": 0.5,
+      "fileRecall": 0.25,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/ticketAgent.ts",
+        "src/export/exporters.ts",
+        "src/types.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "indexeddb",
+      "valid": false,
+      "attempts": 2,
+      "ms": 10291,
+      "fileRecall": null,
+      "retrievalRecall": 1,
+      "hallucinatedFiles": null,
+      "askedQuestions": null,
+      "files": [],
+      "error": "The model returned invalid output twice (description: Too small: expected string to have >=1 characters). Try a larger model.",
+      "errorKind": "validation"
+    },
+    {
+      "id": "latency-display",
+      "valid": true,
+      "attempts": 1,
+      "ms": 8455,
+      "retrievalRecall": 0,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/App.tsx",
+        "src/agent/ticketAgent.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "skip-tests",
+      "valid": false,
+      "attempts": 2,
+      "ms": 11221,
+      "fileRecall": null,
+      "retrievalRecall": 1,
+      "hallucinatedFiles": null,
+      "askedQuestions": null,
+      "files": [],
+      "error": "The model returned invalid output twice (title: Too small: expected string to have >=1 characters; description: Too small: expected string to have >=1 characters). Try a larger model.",
+      "errorKind": "validation"
+    },
+    {
+      "id": "edit-profile",
+      "valid": false,
+      "attempts": 1,
+      "ms": 305658,
+      "fileRecall": null,
+      "retrievalRecall": 0,
+      "hallucinatedFiles": null,
+      "askedQuestions": null,
+      "files": [],
+      "error": "fetch failed",
+      "errorKind": "infra"
+    },
+    {
+      "id": "ollama-streaming",
+      "valid": true,
+      "attempts": 2,
+      "ms": 13725,
+      "retrievalRecall": 0.5,
+      "fileRecall": 0.5,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/prompts.ts",
+        "src/llm/providers.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "jira-escaping",
+      "valid": true,
+      "attempts": 2,
+      "ms": 11631,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/export/exporters.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "embeddings",
+      "valid": false,
+      "attempts": 2,
+      "ms": 10623,
+      "fileRecall": null,
+      "retrievalRecall": 1,
+      "hallucinatedFiles": null,
+      "askedQuestions": null,
+      "files": [],
+      "error": "The model returned invalid output twice (description: Too small: expected string to have >=1 characters). Try a larger model.",
+      "errorKind": "validation"
+    },
+    {
+      "id": "remember-model",
+      "valid": false,
+      "attempts": 2,
+      "ms": 9678,
+      "fileRecall": null,
+      "retrievalRecall": 0,
+      "hallucinatedFiles": null,
+      "askedQuestions": null,
+      "files": [],
+      "error": "The model returned invalid output twice (description: Too small: expected string to have >=1 characters). Try a larger model.",
+      "errorKind": "validation"
+    },
+    {
+      "id": "vague",
+      "valid": true,
+      "attempts": 2,
+      "ms": 13682,
+      "retrievalRecall": null,
+      "fileRecall": null,
+      "hallucinatedFiles": 0,
+      "askedQuestions": true,
+      "files": [
+        "src/agent/prompts.ts",
+        "src/agent/schemas.ts",
+        "skills/write-ticket/SKILL.md"
+      ],
+      "newFiles": []
+    }
+  ]
+}

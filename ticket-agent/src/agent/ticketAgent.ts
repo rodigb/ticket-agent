@@ -1,4 +1,5 @@
 import { retrieve } from '../repo/repo';
+import type { Skill } from './skills';
 import type { LLMConfig, RepoMemory, RepoProfile, Ticket } from '../types';
 import { askForJSON } from './askForJSON';
 import { profilePrompt, ticketPrompt } from './prompts';
@@ -20,14 +21,15 @@ interface GenerateTicketArgs {
   requirement: string;
   memory: RepoMemory | null;
   llm: LLMConfig;
+  skills: Skill[];
   onAttempt?: (attempt: number) => void;
 }
 
-export function generateTicket({ requirement, memory, llm, onAttempt }: GenerateTicketArgs): Promise<Ticket> {
+export function generateTicket({ requirement, memory, llm, skills, onAttempt }: GenerateTicketArgs): Promise<Ticket> {
   const context = memory ? retrieve(memory, requirement) : [];
   return askForJSON(
     llm,
-    ticketPrompt({ requirement, profile: memory?.profile ?? null, context }),
+    ticketPrompt({ requirement, profile: memory?.profile ?? null, paths: memory?.paths ?? [], context, skills }),
     TicketSchema,
     onAttempt,
   );

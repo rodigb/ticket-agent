@@ -11,17 +11,29 @@ export const TicketSchema = z.object({
   acceptanceCriteria: z.array(z.string()).min(1),
   tasks: list,
   affectedFiles: list,
+  newFiles: list,
   risks: list,
   openQuestions: list,
   estimate: z.enum(['S', 'M', 'L']).catch('M'),
 });
 
+// The profile is context we feed back into the ticket prompt, not a contract anyone consumes,
+// so it accepts whatever shape a small model produces and flattens it to text.
+const toText = (x: unknown): string =>
+  typeof x === 'string'
+    ? x
+    : x && typeof x === 'object'
+      ? Object.entries(x as Record<string, unknown>).map(([k, v]) => `${k}: ${toText(v)}`).join(', ')
+      : String(x ?? '');
+const flexText = z.preprocess((v) => (Array.isArray(v) ? v.map(toText).join('; ') : toText(v)), z.string());
+const flexList = z.preprocess((v) => (v == null ? [] : (Array.isArray(v) ? v : [v]).map(toText)), z.array(z.string()));
+
 export const RepoProfileSchema = z.object({
-  stack: list,
-  structure: z.string().default(''),
-  conventions: list,
-  testing: z.string().default(''),
-  notes: z.string().default(''),
+  stack: flexList,
+  structure: flexText,
+  conventions: flexList,
+  testing: flexText,
+  notes: flexText,
 });
 
 export type Ticket = z.infer<typeof TicketSchema>;

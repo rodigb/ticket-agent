@@ -1,0 +1,234 @@
+{
+  "runAt": "2026-10-07T19:30:15.916Z",
+  "provider": "ollama",
+  "model": "llama3.1",
+  "promptVersion": "v2",
+  "retrieval": "keyword",
+  "summary": {
+    "infraErrors": 1,
+    "validityRate": 0.8571428571428571,
+    "firstPassRate": 0.5714285714285714,
+    "fileRecall": 0.8484848484848484,
+    "retrievalRecall": 0.8717948717948717,
+    "hallucinatedFileRate": 0,
+    "vagueAskedQuestions": true,
+    "avgSeconds": 37.87721428571428
+  },
+  "cases": [
+    {
+      "id": "openai-provider",
+      "valid": true,
+      "attempts": 1,
+      "ms": 13261,
+      "retrievalRecall": 1,
+      "fileRecall": 0.5,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/llm/providers.ts",
+        "src/App.tsx"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "truncation-warning",
+      "valid": true,
+      "attempts": 1,
+      "ms": 13256,
+      "retrievalRecall": 0.3333333333333333,
+      "fileRecall": 0.3333333333333333,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/repo/repo.ts",
+        "src/agent/prompts.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "retry-count",
+      "valid": true,
+      "attempts": 1,
+      "ms": 14965,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/askForJSON.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "markdown-export",
+      "valid": true,
+      "attempts": 1,
+      "ms": 10880,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/App.tsx",
+        "src/export/exporters.ts",
+        "src/agent/prompts.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "priority-field",
+      "valid": false,
+      "attempts": 1,
+      "ms": 305901,
+      "fileRecall": null,
+      "retrievalRecall": 0.5,
+      "hallucinatedFiles": null,
+      "askedQuestions": null,
+      "files": [],
+      "error": "fetch failed",
+      "errorKind": "infra"
+    },
+    {
+      "id": "indexeddb",
+      "valid": true,
+      "attempts": 2,
+      "ms": 25478,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/repo/repo.ts",
+        "src/agent/ticketAgent.ts",
+        "src/main.jsx"
+      ],
+      "newFiles": [
+        "src/repo/indexeddb.ts"
+      ]
+    },
+    {
+      "id": "latency-display",
+      "valid": true,
+      "attempts": 1,
+      "ms": 12978,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/askForJSON.ts",
+        "src/App.tsx"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "skip-tests",
+      "valid": false,
+      "attempts": 2,
+      "ms": 18063,
+      "fileRecall": null,
+      "retrievalRecall": 1,
+      "hallucinatedFiles": null,
+      "askedQuestions": null,
+      "files": [],
+      "error": "The model returned invalid output twice (title: Too small: expected string to have >=1 characters). Try a larger model.",
+      "errorKind": "validation"
+    },
+    {
+      "id": "edit-profile",
+      "valid": true,
+      "attempts": 1,
+      "ms": 14107,
+      "retrievalRecall": 0.5,
+      "fileRecall": 0.5,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/prompts.ts",
+        "src/agent/ticketAgent.ts",
+        "src/App.tsx",
+        "src/export/exporters.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "ollama-streaming",
+      "valid": true,
+      "attempts": 2,
+      "ms": 22090,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/llm/providers.ts",
+        "src/agent/ticketAgent.ts",
+        "src/App.tsx"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "jira-escaping",
+      "valid": true,
+      "attempts": 2,
+      "ms": 19434,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/export/exporters.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "embeddings",
+      "valid": true,
+      "attempts": 1,
+      "ms": 19329,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/repo/repo.ts",
+        "src/llm/providers.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "remember-model",
+      "valid": true,
+      "attempts": 2,
+      "ms": 24967,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/ticketAgent.ts",
+        "src/App.tsx",
+        "src/export/exporters.ts",
+        "src/repo/repo.ts",
+        "src/llm/providers.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "vague",
+      "valid": true,
+      "attempts": 1,
+      "ms": 15572,
+      "retrievalRecall": null,
+      "fileRecall": null,
+      "hallucinatedFiles": 0,
+      "askedQuestions": true,
+      "files": [
+        "src/agent/prompts.ts",
+        "src/agent/schemas.ts",
+        "src/App.tsx"
+      ],
+      "newFiles": []
+    }
+  ]
+}

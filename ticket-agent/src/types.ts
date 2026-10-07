@@ -21,4 +21,4 @@ export interface RepoMemory {
   indexedAt: number;
 }
 
-export type TicketListKey = 'acceptanceCriteria' | 'tasks' | 'affectedFiles' | 'risks' | 'openQuestions';
+export type TicketListKey = 'acceptanceCriteria' | 'tasks' | 'affectedFiles' | 'newFiles' | 'risks' | 'openQuestions';

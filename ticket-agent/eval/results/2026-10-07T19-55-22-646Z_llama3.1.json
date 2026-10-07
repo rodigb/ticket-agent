@@ -1,0 +1,240 @@
+{
+  "runAt": "2026-10-07T19:55:22.647Z",
+  "provider": "ollama",
+  "model": "llama3.1",
+  "promptVersion": "v3",
+  "skills": [
+    "write-ticket"
+  ],
+  "skillsHash": "27cebab8",
+  "repoFiles": 25,
+  "repoHash": "90065b00",
+  "retrieval": "keyword",
+  "summary": {
+    "infraErrors": 0,
+    "validityRate": 1,
+    "firstPassRate": 0.9285714285714286,
+    "fileRecall": 0.8589743589743589,
+    "retrievalRecall": 0.5769230769230769,
+    "hallucinatedFileRate": 0,
+    "vagueAskedQuestions": true,
+    "avgSeconds": 12.671357142857143
+  },
+  "cases": [
+    {
+      "id": "openai-provider",
+      "valid": true,
+      "attempts": 1,
+      "ms": 12427,
+      "retrievalRecall": 0.5,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/llm/providers.ts",
+        "src/types.ts",
+        "src/App.tsx"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "truncation-warning",
+      "valid": true,
+      "attempts": 1,
+      "ms": 13078,
+      "retrievalRecall": 0,
+      "fileRecall": 0.6666666666666666,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/App.tsx",
+        "src/agent/prompts.ts",
+        "src/repo/repo.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "retry-count",
+      "valid": true,
+      "attempts": 1,
+      "ms": 16256,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/askForJSON.ts",
+        "src/agent/prompts.ts",
+        "src/agent/schemas.ts",
+        "src/repo/repo.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "markdown-export",
+      "valid": true,
+      "attempts": 1,
+      "ms": 12897,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/export/exporters.ts",
+        "src/App.tsx"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "priority-field",
+      "valid": true,
+      "attempts": 1,
+      "ms": 12628,
+      "retrievalRecall": 0.5,
+      "fileRecall": 0.5,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/prompts.ts",
+        "src/export/exporters.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "indexeddb",
+      "valid": true,
+      "attempts": 1,
+      "ms": 12612,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/repo/repo.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "latency-display",
+      "valid": true,
+      "attempts": 1,
+      "ms": 9021,
+      "retrievalRecall": 0,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/App.tsx",
+        "src/agent/ticketAgent.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "skip-tests",
+      "valid": true,
+      "attempts": 1,
+      "ms": 13155,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/repo/repo.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "edit-profile",
+      "valid": true,
+      "attempts": 1,
+      "ms": 10634,
+      "retrievalRecall": 0,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/prompts.ts",
+        "src/agent/schemas.ts",
+        "src/App.tsx",
+        "src/repo/repo.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "ollama-streaming",
+      "valid": true,
+      "attempts": 1,
+      "ms": 13556,
+      "retrievalRecall": 0.5,
+      "fileRecall": 0.5,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/llm/providers.ts",
+        "src/agent/prompts.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "jira-escaping",
+      "valid": true,
+      "attempts": 1,
+      "ms": 10361,
+      "retrievalRecall": 1,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/export/exporters.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "embeddings",
+      "valid": true,
+      "attempts": 1,
+      "ms": 13353,
+      "retrievalRecall": 1,
+      "fileRecall": 0.5,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/repo/repo.ts",
+        "src/agent/prompts.ts"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "remember-model",
+      "valid": true,
+      "attempts": 1,
+      "ms": 10760,
+      "retrievalRecall": 0,
+      "fileRecall": 1,
+      "hallucinatedFiles": 0,
+      "askedQuestions": null,
+      "files": [
+        "src/agent/ticketAgent.ts",
+        "src/llm/providers.ts",
+        "src/App.tsx"
+      ],
+      "newFiles": []
+    },
+    {
+      "id": "vague",
+      "valid": true,
+      "attempts": 2,
+      "ms": 16661,
+      "retrievalRecall": null,
+      "fileRecall": null,
+      "hallucinatedFiles": 0,
+      "askedQuestions": true,
+      "files": [
+        "src/agent/prompts.ts",
+        "src/agent/schemas.ts",
+        "skills/write-ticket/SKILL.md"
+      ],
+      "newFiles": []
+    }
+  ]
+}

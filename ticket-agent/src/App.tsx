@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { PROVIDERS, listOllamaModels } from "./llm/providers";
 import { indexRepo, loadMemory, saveMemory } from "./repo/repo";
 import { buildProfile, generateTicket } from "./agent/ticketAgent";
+import { loadSkillsBrowser } from "./agent/loadSkillsBrowser";
+import { pickSkills } from "./agent/skills";
+import { toJira, toDevOps } from "./export/exporters";
 import type {
   LLMConfig,
   ProviderId,
@@ -9,12 +12,12 @@ import type {
   Ticket,
   TicketListKey,
 } from "./types";
-import { toDevOps, toJira } from "./export/exporters";
 
 const SECTIONS: [string, TicketListKey][] = [
   ["Acceptance criteria", "acceptanceCriteria"],
   ["Tasks", "tasks"],
   ["Affected files", "affectedFiles"],
+  ["New files", "newFiles"],
   ["Risks", "risks"],
   ["Open questions", "openQuestions"],
 ];
@@ -80,7 +83,14 @@ export default function App() {
 
   const generate = () =>
     run("Writing ticket…", async () => {
-      setTicket(await generateTicket({ requirement, memory, llm }));
+      setTicket(
+        await generateTicket({
+          requirement,
+          memory,
+          llm,
+          skills: pickSkills(loadSkillsBrowser(), ["write-ticket"]),
+        }),
+      );
     });
 
   const download = (obj: unknown, name: string) => {

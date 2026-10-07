@@ -3,6 +3,8 @@ import { chat } from '../llm/providers';
 import type { LLMConfig } from '../types';
 import { retryNote, type Prompt } from './prompts';
 
+const RETRY_TEMPERATURE = 0.3; // first attempt is deterministic; the retry needs room to differ
+
 // Small models often wrap JSON in fences or prose, so take the outermost {...} block.
 const extractJSON = (s: string): unknown => {
   const start = s.indexOf('{');
@@ -22,7 +24,7 @@ export async function askForJSON<T>(
   let problem = '';
   for (let attempt = 0; attempt < 2; attempt++) {
     onAttempt?.(attempt + 1);
-    const out = await chat({ ...llm, system: prompt.system, user });
+    const out = await chat({ ...llm, system: prompt.system, user, temperature: attempt === 0 ? undefined : RETRY_TEMPERATURE });
     try {
       const parsed = schema.safeParse(extractJSON(out));
       if (parsed.success) return parsed.data;

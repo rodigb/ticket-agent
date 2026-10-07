@@ -4,6 +4,9 @@ import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'n
 import { join, relative, sep } from 'node:path';
 import { PROMPT_VERSION } from '../src/agent/prompts';
 import { buildProfile, generateTicket } from '../src/agent/ticketAgent';
+import { createHash } from 'node:crypto';
+import { pickSkills } from '../src/agent/skills';
+import { loadSkillsNode } from './loadSkillsNode';
 import { chunkFile, retrieve, SKIP } from '../src/repo/repo';
 import type { LLMConfig, ProviderId, RepoMemory } from '../src/types';
 
@@ -11,7 +14,7 @@ interface Case { id: string; requirement: string; expectedFiles: string[]; vague
 interface CaseResult {
   id: string; valid: boolean; attempts: number; ms: number;
   fileRecall: number | null; retrievalRecall: number | null; hallucinatedFiles: number | null;
-  askedQuestions: boolean | null; files: string[]; error?: string; errorKind?: 'validation' | 'infra';
+  askedQuestions: boolean | null; files: string[]; newFiles?: string[]; error?: string; errorKind?: 'validation' | 'infra';
 }
 
 const ROOT = process.cwd();
@@ -57,6 +60,9 @@ async function main() {
   const model = arg('model');
   if (!model) throw new Error('Pass --model, e.g. --model llama3.1');
   const llm: LLMConfig = { provider, model, apiKey: process.env.ANTHROPIC_API_KEY ?? '' };
+  const skillNames = (arg('skills') ?? 'write-ticket').split(',').filter((n) => n && n !== 'none');
+  const skills = pickSkills(loadSkillsNode(), skillNames);
+  const skillsHash = createHash('sha1').update(skills.map((s) => s.name + s.body).join('\n')).digest('hex').slice(0, 8);
   const cases: Case[] = JSON.parse(readFileSync('eval/cases.json', 'utf8'));
 
   const memory = indexLocal();
@@ -70,13 +76,14 @@ async function main() {
     const retrieved = [...new Set(retrieve(memory, c.requirement).map((x) => x.path))];
     const retrievalRecall = c.vague ? null : c.expectedFiles.filter((f) => hit(retrieved, f, memory.paths)).length / c.expectedFiles.length;
     try {
-      const t = await generateTicket({ requirement: c.requirement, memory, llm, onAttempt: (n) => (attempts = n) });
+      const t = await generateTicket({ requirement: c.requirement, memory, llm, skills, onAttempt: (n) => (attempts = n) });
       results.push({
         id: c.id, valid: true, attempts, ms: Date.now() - t0, retrievalRecall,
         fileRecall: c.vague ? null : c.expectedFiles.filter((f) => hit(t.affectedFiles, f, memory.paths)).length / c.expectedFiles.length,
         hallucinatedFiles: t.affectedFiles.length ? t.affectedFiles.filter((f) => resolve(f, memory.paths) === null).length / t.affectedFiles.length : null,
         askedQuestions: c.vague ? t.openQuestions.length > 0 : null,
         files: t.affectedFiles,
+        newFiles: t.newFiles,
       });
     } catch (e) {
       results.push({ id: c.id, valid: false, attempts, ms: Date.now() - t0, fileRecall: null, retrievalRecall, hallucinatedFiles: null, askedQuestions: null, files: [], error: e instanceof Error ? e.message : String(e), errorKind: e instanceof Error && e.message.startsWith('The model returned invalid output') ? 'validation' : 'infra' });
@@ -103,7 +110,7 @@ async function main() {
 
   mkdirSync('eval/results', { recursive: true });
   const file = `eval/results/${new Date().toISOString().replace(/[:.]/g, '-')}_${model.replace(/[^\w.-]/g, '_')}.json`;
-  writeFileSync(file, JSON.stringify({ runAt: new Date().toISOString(), provider, model, promptVersion: PROMPT_VERSION, retrieval: 'keyword', summary, cases: results }, null, 2));
+  writeFileSync(file, JSON.stringify({ runAt: new Date().toISOString(), provider, model, promptVersion: PROMPT_VERSION, skills: skillNames, skillsHash, repoFiles: memory.paths.length, repoHash: createHash('sha1').update(memory.chunks.map((c) => c.path + c.text).join('\n')).digest('hex').slice(0, 8), retrieval: 'keyword', summary, cases: results }, null, 2));
   console.log(`Saved ${file}`);
 }
 main().catch((e) => { console.error(e); process.exit(1); });

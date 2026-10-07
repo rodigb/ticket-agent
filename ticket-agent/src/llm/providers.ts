@@ -33,9 +33,10 @@ export async function listOllamaModels(): Promise<string[]> {
 export interface ChatArgs extends LLMConfig {
   system: string;
   user: string;
+  temperature?: number; // Ollama only; defaults to 0 for repeatable runs
 }
 
-export async function chat({ provider, model, apiKey, system, user }: ChatArgs): Promise<string> {
+export async function chat({ provider, model, apiKey, system, user, temperature }: ChatArgs): Promise<string> {
   if (provider === 'ollama') {
     const r = await fetch(`${OLLAMA}/api/chat`, {
       method: 'POST',
@@ -43,6 +44,9 @@ export async function chat({ provider, model, apiKey, system, user }: ChatArgs):
         model,
         stream: false,
         format: 'json',
+        // Ollama silently truncates prompts beyond num_ctx, so set it explicitly.
+        // temperature 0 + fixed seed keeps eval runs repeatable.
+        options: { num_ctx: 8192, temperature: temperature ?? 0, seed: 42 },
         messages: [
           { role: 'system', content: system },
           { role: 'user', content: user },
