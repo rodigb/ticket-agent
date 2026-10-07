@@ -1,4 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import { useTheme } from "../ThemeProvider";
+
+const MOON = "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z";
+const SUN =
+  "M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4 7 17M17 7l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z";
 
 const styles = {
   wrap: "relative",
@@ -13,6 +18,10 @@ const styles = {
   button:
     "rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
   error: "mt-2 text-xs text-red-700 dark:text-red-400",
+  appearance:
+    "mt-4 flex items-center justify-between border-t border-line pt-4",
+  themeButton:
+    "rounded-full border border-line p-2 text-body transition-colors hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
 };
 
 interface Props {
@@ -25,6 +34,12 @@ export function RepoMenu({ onImport }: Props) {
   const [value, setValue] = useState("");
   const [error, setError] = useState("");
   const wrapRef = useRef<HTMLDivElement>(null);
+  const { mode, setMode } = useTheme();
+
+  const isDark =
+    mode === "system"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+      : mode === "dark";
 
   useEffect(() => {
     if (!open) return;
@@ -57,7 +72,7 @@ export function RepoMenu({ onImport }: Props) {
       <button
         type="button"
         className={styles.cog}
-        aria-label="Repository options"
+        aria-label="Settings"
         aria-expanded={open}
         aria-haspopup="true"
         onClick={() => setOpen((o) => !o)}
@@ -103,6 +118,31 @@ export function RepoMenu({ onImport }: Props) {
               {error}
             </p>
           )}
+          <div className={styles.appearance}>
+            <span className={styles.title}>Dark mode</span>
+            <button
+              type="button"
+              className={styles.themeButton}
+              aria-label="Dark mode"
+              aria-pressed={isDark}
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              onClick={() => setMode(isDark ? "light" : "dark")}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width={20}
+                height={20}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d={isDark ? SUN : MOON} />
+              </svg>
+            </button>
+          </div>
         </form>
       )}
     </div>
