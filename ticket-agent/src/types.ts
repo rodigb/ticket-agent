@@ -1,6 +1,6 @@
-import type { RepoProfile } from './schemas';
+import type { RepoProfile } from './agent/schemas';
 
-export type { Ticket, RepoProfile } from './schemas';
+export type { Ticket, RepoProfile } from './agent/schemas';
 
 export type ProviderId = 'ollama' | 'anthropic';
 

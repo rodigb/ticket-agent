@@ -1,4 +1,4 @@
-import type { LLMConfig, ProviderId } from './types';
+import type { LLMConfig, ProviderId } from '../types';
 
 // Every provider exposes the same call: chat({ provider, model, apiKey, system, user }) -> string
 interface ProviderInfo {

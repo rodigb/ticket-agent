@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { PROVIDERS, listOllamaModels } from "./providers";
-import { indexRepo, loadMemory, saveMemory } from "./repo";
-import { buildProfile, generateTicket, toJira, toDevOps } from "./agent";
+import { PROVIDERS, listOllamaModels } from "./llm/providers";
+import { indexRepo, loadMemory, saveMemory } from "./repo/repo";
+import { buildProfile, generateTicket } from "./agent/ticketAgent";
 import type {
   LLMConfig,
   ProviderId,
@@ -9,6 +9,7 @@ import type {
   Ticket,
   TicketListKey,
 } from "./types";
+import { toDevOps, toJira } from "./export/exporters";
 
 const SECTIONS: [string, TicketListKey][] = [
   ["Acceptance criteria", "acceptanceCriteria"],

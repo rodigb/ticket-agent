@@ -1,0 +1,78 @@
+[
+  {
+    "id": "openai-provider",
+    "requirement": "Add an OpenAI provider so users can pick GPT models alongside Ollama and Anthropic.",
+    "expectedFiles": ["src/llm/providers.ts", "src/types.ts"]
+  },
+  {
+    "id": "truncation-warning",
+    "requirement": "Warn the user in the UI when GitHub truncates the file list for a very large repository.",
+    "expectedFiles": ["src/repo/repo.ts", "src/App.tsx", "src/types.ts"]
+  },
+  {
+    "id": "retry-count",
+    "requirement": "Let the number of retries after invalid model JSON be configurable instead of fixed at one.",
+    "expectedFiles": ["src/agent/askForJSON.ts"]
+  },
+  {
+    "id": "markdown-export",
+    "requirement": "Add a Markdown export for tickets next to the Jira and Azure DevOps exports.",
+    "expectedFiles": ["src/export/exporters.ts", "src/App.tsx"]
+  },
+  {
+    "id": "priority-field",
+    "requirement": "Add a priority field (low, medium, high) to every ticket and include it in the exports.",
+    "expectedFiles": [
+      "src/agent/schemas.ts",
+      "src/agent/prompts.ts",
+      "src/export/exporters.ts",
+      "src/App.tsx"
+    ]
+  },
+  {
+    "id": "indexeddb",
+    "requirement": "Store the indexed repository memory in IndexedDB instead of localStorage so large repos fit.",
+    "expectedFiles": ["src/repo/repo.ts"]
+  },
+  {
+    "id": "latency-display",
+    "requirement": "Show how long each ticket generation took in the UI.",
+    "expectedFiles": ["src/App.tsx"]
+  },
+  {
+    "id": "skip-tests",
+    "requirement": "Skip test files and snapshot files when indexing a repository.",
+    "expectedFiles": ["src/repo/repo.ts"]
+  },
+  {
+    "id": "edit-profile",
+    "requirement": "Let users edit the generated repo profile in the UI and save the correction.",
+    "expectedFiles": ["src/App.tsx", "src/repo/repo.ts"]
+  },
+  {
+    "id": "ollama-streaming",
+    "requirement": "Stream Ollama responses so the ticket text appears as the model writes it.",
+    "expectedFiles": ["src/llm/providers.ts", "src/App.tsx"]
+  },
+  {
+    "id": "jira-escaping",
+    "requirement": "Special characters in ticket text are breaking the Jira export description. Fix it.",
+    "expectedFiles": ["src/export/exporters.ts"]
+  },
+  {
+    "id": "embeddings",
+    "requirement": "Replace keyword retrieval with embeddings from Ollama's embedding endpoint.",
+    "expectedFiles": ["src/repo/repo.ts", "src/llm/providers.ts"]
+  },
+  {
+    "id": "remember-model",
+    "requirement": "Remember the last used provider and model between sessions.",
+    "expectedFiles": ["src/App.tsx"]
+  },
+  {
+    "id": "vague",
+    "requirement": "Make the ticket generator better.",
+    "expectedFiles": [],
+    "vague": true
+  }
+]

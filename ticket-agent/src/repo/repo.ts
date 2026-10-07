@@ -1,14 +1,21 @@
-import type { Chunk, RepoMemory } from './types';
+import type { Chunk, RepoMemory } from '../types';
 
 const GH = 'https://api.github.com';
-const SKIP = /(^|\/)(node_modules|dist|build|\.git|vendor)\/|\.(png|jpe?g|gif|svg|ico|lock|woff2?|pdf|zip|map)$|\.min\./i;
-const KEY = /(^|\/)(README\.md|package\.json|pyproject\.toml|requirements\.txt|go\.mod|pom\.xml|Dockerfile|CONTRIBUTING\.md)$/i;
+export const SKIP = /(^|\/)(node_modules|dist|build|\.git|vendor)\/|\.(png|jpe?g|gif|svg|ico|lock|woff2?|pdf|zip|map)$|\.min\./i;
+export const KEY = /(^|\/)(README\.md|package\.json|pyproject\.toml|requirements\.txt|go\.mod|pom\.xml|Dockerfile|CONTRIBUTING\.md)$/i;
 const MEM_KEY = (repo: string) => `ticket-agent:memory:${repo}`;
 
 // Only the GitHub API fields we actually use
 interface GitHubRepoMeta { default_branch: string; description: string | null }
 interface GitHubTreeEntry { path: string; type: 'blob' | 'tree' | 'commit'; size?: number }
 interface GitHubTree { tree: GitHubTreeEntry[]; truncated: boolean }
+
+export function chunkFile(path: string, text: string): Chunk[] {
+  const lines = text.split('\n');
+  const out: Chunk[] = [];
+  for (let s = 0; s < lines.length; s += 40) out.push({ path, text: lines.slice(s, s + 40).join('\n') });
+  return out;
+}
 
 export async function indexRepo(
   repo: string,
@@ -42,10 +49,7 @@ export async function indexRepo(
     const text = await (
       await get(`${GH}/repos/${repo}/contents/${chosen[i].path}`, { Accept: 'application/vnd.github.raw' })
     ).text();
-    const lines = text.split('\n');
-    for (let s = 0; s < lines.length; s += 40) {
-      chunks.push({ path: chosen[i].path, text: lines.slice(s, s + 40).join('\n') });
-    }
+    chunks.push(...chunkFile(chosen[i].path, text));
   }
 
   return {
