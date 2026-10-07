@@ -17,7 +17,9 @@ interface CaseResult {
   askedQuestions: boolean | null; files: string[]; newFiles?: string[]; error?: string; errorKind?: 'validation' | 'infra';
 }
 
-const ROOT = process.cwd();
+// --snapshot <name> indexes eval/fixtures/<name>/ (a frozen copy) instead of the live project.
+const snapshotName = (() => { const i = process.argv.indexOf('--snapshot'); return i > -1 ? process.argv[i + 1] : undefined; })();
+const ROOT = snapshotName ? join(process.cwd(), 'eval', 'fixtures', snapshotName) : process.cwd();
 // eval/ is excluded so the answer key can never leak into retrieval.
 const EXCLUDE = /^(node_modules|dist|\.git|eval|public)(\/|$)|package-lock\.json$/;
 const arg = (k: string): string | undefined => {
@@ -63,9 +65,11 @@ async function main() {
   const skillNames = (arg('skills') ?? 'write-ticket').split(',').filter((n) => n && n !== 'none');
   const skills = pickSkills(loadSkillsNode(), skillNames);
   const skillsHash = createHash('sha1').update(skills.map((s) => s.name + s.body).join('\n')).digest('hex').slice(0, 8);
-  const cases: Case[] = JSON.parse(readFileSync('eval/cases.json', 'utf8'));
 
+  const cases: Case[] = JSON.parse(readFileSync('eval/cases.json', 'utf8'));
   const memory = indexLocal();
+  const missing = cases.flatMap((c) => c.expectedFiles).filter((f) => !memory.paths.includes(f));
+  if (missing.length) console.warn(`WARNING: ${missing.length} expected file(s) are not in the indexed repo, so those cases cannot score: ${[...new Set(missing)].join(', ')}`);
   console.log(`Indexed ${memory.paths.length} files, ${memory.chunks.length} chunks. Profiling…`);
   memory.profile = await buildProfile(memory, llm);
 
@@ -110,7 +114,7 @@ async function main() {
 
   mkdirSync('eval/results', { recursive: true });
   const file = `eval/results/${new Date().toISOString().replace(/[:.]/g, '-')}_${model.replace(/[^\w.-]/g, '_')}.json`;
-  writeFileSync(file, JSON.stringify({ runAt: new Date().toISOString(), provider, model, promptVersion: PROMPT_VERSION, skills: skillNames, skillsHash, repoFiles: memory.paths.length, repoHash: createHash('sha1').update(memory.chunks.map((c) => c.path + c.text).join('\n')).digest('hex').slice(0, 8), retrieval: 'keyword', summary, cases: results }, null, 2));
+  writeFileSync(file, JSON.stringify({ runAt: new Date().toISOString(), provider, model, promptVersion: PROMPT_VERSION, skills: skillNames, skillsHash, snapshot: snapshotName ?? 'live', repoFiles: memory.paths.length, repoHash: createHash('sha1').update(memory.chunks.map((c) => c.path + c.text).join('\n')).digest('hex').slice(0, 8), retrieval: 'keyword', summary, cases: results }, null, 2));
   console.log(`Saved ${file}`);
 }
 main().catch((e) => { console.error(e); process.exit(1); });

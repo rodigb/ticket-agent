@@ -7,7 +7,7 @@ interface Case { id: string; expectedFiles: string[]; vague?: boolean }
 interface CaseRow { id: string; valid: boolean; attempts: number; ms: number; files: string[]; hallucinatedFiles: number | null }
 interface Run {
   runAt: string; model: string; promptVersion: string; skills?: string[]; skillsHash?: string;
-  repoHash?: string; repoFiles?: number; cases: CaseRow[];
+  repoHash?: string; repoFiles?: number; snapshot?: string; cases: CaseRow[];
 }
 
 const cases: Case[] = JSON.parse(readFileSync('eval/cases.json', 'utf8'));
@@ -36,6 +36,7 @@ const rows = runs.map((r) => {
     model: r.model,
     prompt: r.promptVersion,
     skills: r.skills?.length ? `${r.skills.join('+')}@${r.skillsHash ?? '?'}` : r.skills ? 'none' : '?',
+    snapshot: r.snapshot ?? '?',
     repo: r.repoHash ?? 'unknown',
     'valid': pct(r.cases.filter((c) => c.valid).length / r.cases.length),
     '1st try': pct(r.cases.filter((c) => c.valid && c.attempts === 1).length / r.cases.length),
