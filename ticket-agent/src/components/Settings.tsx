@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { PROVIDERS } from "../llm/providers";
+import { useTheme } from "../ThemeProvider";
 import {
   classifyRepoSize,
   formatRepoSize,
@@ -78,6 +79,8 @@ interface Props {
 
 export function SettingsModal(p: Props) {
   const ref = useRef<HTMLDialogElement>(null);
+  const { mode, setMode } = useTheme();
+  const isDark = mode === "dark";
 
   // The native dialog owns focus trapping and Esc; we only sync its open state with ours.
   useEffect(() => {
@@ -245,6 +248,26 @@ export function SettingsModal(p: Props) {
           {p.indexLabel}
         </button>
         {p.status && <p className={styles.hint}>{p.status}</p>}
+
+        <div className="mt-4 flex items-center justify-between">
+          <span className="text-sm font-medium">Dark mode</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isDark}
+            aria-label="Dark mode"
+            onClick={() => setMode(isDark ? "light" : "dark")}
+            className={`relative h-6 w-11 rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 ${
+              isDark ? "bg-blue-600" : "bg-slate-300"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 size-5 rounded-full bg-white transition-transform ${
+                isDark ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
 
         <div className={styles.actions}>
           {p.provider === "ollama" ? (

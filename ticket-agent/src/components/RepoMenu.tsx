@@ -36,10 +36,7 @@ export function RepoMenu({ onImport }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const { mode, setMode } = useTheme();
 
-  const isDark =
-    mode === "system"
-      ? window.matchMedia("(prefers-color-scheme: dark)").matches
-      : mode === "dark";
+  const isDark = mode === "dark";
 
   useEffect(() => {
     if (!open) return;

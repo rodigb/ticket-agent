@@ -7,6 +7,8 @@ import {
 } from "react";
 import { applyTheme, type ThemeMode } from "./theme";
 
+const MODE_KEY = "theme-mode";
+
 interface ThemeContextValue {
   mode: ThemeMode;
   setMode: (mode: ThemeMode) => void;
@@ -14,16 +16,15 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-export function ThemeProvider({
-  children,
-  defaultMode = "system",
-}: {
-  children: ReactNode;
-  defaultMode?: ThemeMode;
-}) {
-  const [mode, setMode] = useState<ThemeMode>(defaultMode);
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [mode, setMode] = useState<ThemeMode>(() =>
+    localStorage.getItem(MODE_KEY) === "dark" ? "dark" : "light",
+  );
 
-  useEffect(() => applyTheme(mode), [mode]);
+  useEffect(() => {
+    applyTheme(mode);
+    localStorage.setItem(MODE_KEY, mode);
+  }, [mode]);
 
   return (
     <ThemeContext.Provider value={{ mode, setMode }}>

@@ -4,7 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { applyTheme } from './theme';
 
-applyTheme();
+applyTheme(localStorage.getItem('theme-mode') === 'dark' ? 'dark' : 'light');
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />

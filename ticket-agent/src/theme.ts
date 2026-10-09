@@ -1,6 +1,6 @@
 /*
  * Single source of truth for colours.
- *  - applyTheme() writes the palette to CSS variables on <html>, following the system setting.
+ *  - applyTheme() writes the palette to CSS variables on <html> for the chosen light or dark mode.
  *  - tailwindColors maps semantic names to those variables, for tailwind.config.ts.
  * Components use bg-background, bg-surface, border-line, text-body, text-muted, bg-accent
  * and never need a dark: variant for colour.
@@ -57,27 +57,13 @@ export const tailwindColors = {
   },
 } as const;
 
-export type ThemeMode = 'system' | 'light' | 'dark';
+export type ThemeMode = 'light' | 'dark';
 
-const DARK_QUERY = '(prefers-color-scheme: dark)';
-
-function paint(palette: Palette, scheme: 'light' | 'dark'): void {
+export function applyTheme(mode: ThemeMode = 'light'): void {
   const root = document.documentElement;
-  for (const [name, value] of Object.entries(palette) as [TokenName, string][]) {
+  for (const [name, value] of Object.entries(mode === 'dark' ? dark : light) as [TokenName, string][]) {
     root.style.setProperty(toCssVar(name), value);
   }
-  root.style.colorScheme = scheme; // native controls and scrollbars match
-}
-
-// Call once before rendering. Returns a cleanup function.
-export function applyTheme(mode: ThemeMode = 'system'): () => void {
-  if (mode !== 'system') {
-    paint(mode === 'dark' ? dark : light, mode);
-    return () => {};
-  }
-  const query = window.matchMedia(DARK_QUERY);
-  const update = () => paint(query.matches ? dark : light, query.matches ? 'dark' : 'light');
-  update();
-  query.addEventListener('change', update);
-  return () => query.removeEventListener('change', update);
+  root.style.colorScheme = mode; // native controls and scrollbars match
+  root.classList.toggle('dark', mode === 'dark'); // drives Tailwind's dark: variant
 }

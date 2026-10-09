@@ -1,5 +1,6 @@
    @import "tailwindcss";
    @config "../tailwind.config.ts";
+   @custom-variant dark (&:where(.dark, .dark *));
 
    @layer base {
      *, ::after, ::before, ::backdrop, ::file-selector-button {
@@ -27,8 +28,8 @@
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
   color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  color: var(--text-primary, #111827);
+  background: var(--background, #f8f9fa);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -79,7 +80,7 @@ h1,
 h2 {
   font-family: var(--heading);
   font-weight: 500;
-  color: var(--text-h);
+  color: var(--text-primary);
 }
 
 h1 {
@@ -109,12 +110,12 @@ code,
   font-family: var(--mono);
   display: inline-flex;
   border-radius: 4px;
-  color: var(--text-h);
+  color: var(--text-primary);
 }
 
 code {
   font-size: 15px;
   line-height: 135%;
   padding: 4px 8px;
-  background: var(--code-bg);
+  background: var(--surface);
 }
