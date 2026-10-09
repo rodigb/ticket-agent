@@ -35,6 +35,16 @@ interface Props {
   onApiKeyChange: (k: string) => void;
   modelsError: string;
   onRefreshModels: () => void;
+  repo: string;
+  onRepoChange: (r: string) => void;
+  repoInvalid: boolean;
+  repoNote: string;
+  ghToken: string;
+  onGhTokenChange: (t: string) => void;
+  indexLabel: string;
+  canIndex: boolean;
+  onIndex: () => void;
+  status: string;
 }
 
 export function SettingsModal(p: Props) {
@@ -139,6 +149,46 @@ export function SettingsModal(p: Props) {
             </p>
           </>
         )}
+
+        <label className={styles.label} htmlFor="settings-repo">
+          Repository
+        </label>
+        <input
+          id="settings-repo"
+          className={styles.control}
+          placeholder="GitHub URL or owner/repo"
+          value={p.repo}
+          onChange={(e) => p.onRepoChange(e.target.value)}
+        />
+        {p.repoInvalid && (
+          <p className={styles.error} role="alert">
+            Enter a GitHub URL such as https://github.com/owner/repo, or
+            owner/repo.
+          </p>
+        )}
+        {p.repoNote && <p className={styles.hint}>{p.repoNote}</p>}
+
+        <label className={styles.label} htmlFor="settings-gh-token">
+          GitHub token (optional)
+        </label>
+        <input
+          id="settings-gh-token"
+          type="password"
+          autoComplete="off"
+          className={styles.control}
+          placeholder="For private repos"
+          value={p.ghToken}
+          onChange={(e) => p.onGhTokenChange(e.target.value)}
+        />
+        <button
+          type="button"
+          className={`${styles.secondaryButton} mt-3 disabled:cursor-not-allowed disabled:opacity-50`}
+          onClick={p.onIndex}
+          disabled={!p.canIndex}
+        >
+          {p.indexLabel}
+        </button>
+        {p.status && <p className={styles.hint}>{p.status}</p>}
 
         <div className={styles.actions}>
           {p.provider === "ollama" ? (

@@ -2,12 +2,13 @@
  * Reads every file in eval/results/ and prints one comparable row per run.
  * Recall/precision are recomputed from the saved ticket files, so old results can be rescored. */
 import { readdirSync, readFileSync } from 'node:fs';
+import { checkCriteria, summarizeCriteria } from '../src/agent/criteriaChecks';
 
 interface Case { id: string; expectedFiles: string[]; vague?: boolean }
-interface CaseRow { id: string; valid: boolean; attempts: number; ms: number; files: string[]; hallucinatedFiles: number | null }
+interface CaseRow { id: string; valid: boolean; attempts: number; ms: number; files: string[]; hallucinatedFiles: number | null; ticket?: { acceptanceCriteria: string[] } }
 interface Run {
   runAt: string; model: string; promptVersion: string; skills?: string[]; skillsHash?: string;
-  repoHash?: string; repoFiles?: number; snapshot?: string; cases: CaseRow[];
+  repoHash?: string; repoFiles?: number; snapshot?: string; outputMode?: string; schemaFallbacks?: number; cases: CaseRow[];
 }
 
 const cases: Case[] = JSON.parse(readFileSync('eval/cases.json', 'utf8'));
@@ -37,6 +38,7 @@ const rows = runs.map((r) => {
     prompt: r.promptVersion,
     skills: r.skills?.length ? `${r.skills.join('+')}@${r.skillsHash ?? '?'}` : r.skills ? 'none' : '?',
     snapshot: r.snapshot ?? '?',
+    format: r.outputMode ? r.outputMode + (r.schemaFallbacks ? '*' : '') : 'json',
     repo: r.repoHash ?? 'unknown',
     'valid': pct(r.cases.filter((c) => c.valid).length / r.cases.length),
     '1st try': pct(r.cases.filter((c) => c.valid && c.attempts === 1).length / r.cases.length),
@@ -45,6 +47,11 @@ const rows = runs.map((r) => {
     'precision': pct(mean(withFiles.map((c) => c.files.filter((f) => exp(c).some((w) => match(f, w))).length / c.files.length))),
     'files/ticket': mean(valid.map((c) => c.files.length)).toFixed(1),
     'invented': pct(mean(invented)),
+    // Criteria checks are recomputed from the saved tickets, so they work on any run that stored them.
+    ...(() => {
+      const cs = summarizeCriteria(r.cases.flatMap((c) => (c.ticket ? [checkCriteria(c.ticket.acceptanceCriteria)] : [])));
+      return { 'GWT': cs ? pct(cs.gwtRate) : 'n/a', 'edge case': cs ? pct(cs.failureCaseRate) : 'n/a', 'vague': cs ? pct(cs.vagueRate) : 'n/a' };
+    })(),
     'sec': (mean(r.cases.map((c) => c.ms)) / 1000).toFixed(1),
   };
 });
@@ -59,4 +66,6 @@ if (process.argv.includes('--md')) {
 
 const hashes = new Set(rows.map((r) => r.repo));
 if (hashes.size > 1) console.log(`\nWARNING: runs used ${hashes.size} different repo states (${[...hashes].join(', ')}). Only compare rows with the same repo hash.`);
-console.log('\nPrecision is measured against eval/cases.json, which is a judgement call: a ticket can name a sensible file the labels omit.');
+console.log('\nformat: schema = output constrained to the ticket JSON Schema (* = Ollama rejected it for some calls); json = free-form JSON mode. Older runs without the field were json.');
+console.log('GWT = criteria in Given/When/Then form. edge case = tickets with a failure or edge-case criterion. vague = criteria with unverifiable wording.');
+console.log('Precision is measured against eval/cases.json, which is a judgement call: a ticket can name a sensible file the labels omit.');

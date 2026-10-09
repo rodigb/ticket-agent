@@ -34,25 +34,36 @@ export interface ChatArgs extends LLMConfig {
   system: string;
   user: string;
   temperature?: number; // Ollama only; defaults to 0 for repeatable runs
+  // Ollama only: constrain the reply to this JSON Schema instead of free-form JSON.
+  jsonSchema?: Record<string, unknown>;
+  // Called when Ollama rejected the schema and the request was repeated in plain JSON mode.
+  onFallback?: () => void;
 }
 
-export async function chat({ provider, model, apiKey, system, user, temperature }: ChatArgs): Promise<string> {
+export async function chat({ provider, model, apiKey, system, user, temperature, jsonSchema, onFallback }: ChatArgs): Promise<string> {
   if (provider === 'ollama') {
-    const r = await fetch(`${OLLAMA}/api/chat`, {
-      method: 'POST',
-      body: JSON.stringify({
-        model,
-        stream: false,
-        format: 'json',
-        // Ollama silently truncates prompts beyond num_ctx, so set it explicitly.
-        // temperature 0 + fixed seed keeps eval runs repeatable.
-        options: { num_ctx: 8192, temperature: temperature ?? 0, seed: 42 },
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user },
-        ],
-      }),
-    });
+    const post = (format: 'json' | Record<string, unknown>) =>
+      fetch(`${OLLAMA}/api/chat`, {
+        method: 'POST',
+        body: JSON.stringify({
+          model,
+          stream: false,
+          format,
+          // Ollama silently truncates prompts beyond num_ctx, so set it explicitly.
+          // temperature 0 + fixed seed keeps eval runs repeatable.
+          options: { num_ctx: 8192, temperature: temperature ?? 0, seed: 42 },
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+        }),
+      });
+    let r = await post(jsonSchema ?? 'json');
+    // Older Ollama versions only accept format: "json" and answer 400 to a schema.
+    if (r.status === 400 && jsonSchema) {
+      onFallback?.();
+      r = await post('json');
+    }
     if (!r.ok) throw new Error(`Ollama error ${r.status}`);
     const data: OllamaChatResponse = await r.json();
     return data.message.content;

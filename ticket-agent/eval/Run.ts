@@ -8,13 +8,15 @@ import { createHash } from 'node:crypto';
 import { pickSkills } from '../src/agent/skills';
 import { loadSkillsNode } from './loadSkillsNode';
 import { chunkFile, retrieve, SKIP } from '../src/repo/repo';
-import type { LLMConfig, ProviderId, RepoMemory } from '../src/types';
+import { checkCriteria, summarizeCriteria, type CriteriaReport } from '../src/agent/criteriaChecks';
+import type { LLMConfig, ProviderId, RepoMemory, Ticket } from '../src/types';
 
 interface Case { id: string; requirement: string; expectedFiles: string[]; vague?: boolean }
 interface CaseResult {
   id: string; valid: boolean; attempts: number; ms: number;
   fileRecall: number | null; retrievalRecall: number | null; hallucinatedFiles: number | null;
   askedQuestions: boolean | null; files: string[]; newFiles?: string[]; error?: string; errorKind?: 'validation' | 'infra';
+  ticket?: Ticket; criteria?: CriteriaReport; // the full ticket is saved so new metrics can rescore old runs
 }
 
 // --snapshot <name> indexes eval/fixtures/<name>/ (a frozen copy) instead of the live project.
@@ -66,6 +68,8 @@ async function main() {
   const skills = pickSkills(loadSkillsNode(), skillNames);
   const skillsHash = createHash('sha1').update(skills.map((s) => s.name + s.body).join('\n')).digest('hex').slice(0, 8);
 
+  const structured = (arg('structured') ?? 'on') !== 'off'; // --structured off = the old free-form JSON mode
+  let schemaFallbacks = 0;
   const cases: Case[] = JSON.parse(readFileSync('eval/cases.json', 'utf8'));
   const memory = indexLocal();
   const missing = cases.flatMap((c) => c.expectedFiles).filter((f) => !memory.paths.includes(f));
@@ -80,7 +84,7 @@ async function main() {
     const retrieved = [...new Set(retrieve(memory, c.requirement).map((x) => x.path))];
     const retrievalRecall = c.vague ? null : c.expectedFiles.filter((f) => hit(retrieved, f, memory.paths)).length / c.expectedFiles.length;
     try {
-      const t = await generateTicket({ requirement: c.requirement, memory, llm, skills, onAttempt: (n) => (attempts = n) });
+      const t = await generateTicket({ requirement: c.requirement, memory, llm, skills, structured, onSchemaFallback: () => schemaFallbacks++, onAttempt: (n) => (attempts = n) });
       results.push({
         id: c.id, valid: true, attempts, ms: Date.now() - t0, retrievalRecall,
         fileRecall: c.vague ? null : c.expectedFiles.filter((f) => hit(t.affectedFiles, f, memory.paths)).length / c.expectedFiles.length,
@@ -88,6 +92,8 @@ async function main() {
         askedQuestions: c.vague ? t.openQuestions.length > 0 : null,
         files: t.affectedFiles,
         newFiles: t.newFiles,
+        ticket: t,
+        criteria: checkCriteria(t.acceptanceCriteria),
       });
     } catch (e) {
       results.push({ id: c.id, valid: false, attempts, ms: Date.now() - t0, fileRecall: null, retrievalRecall, hallucinatedFiles: null, askedQuestions: null, files: [], error: e instanceof Error ? e.message : String(e), errorKind: e instanceof Error && e.message.startsWith('The model returned invalid output') ? 'validation' : 'infra' });
@@ -103,6 +109,7 @@ async function main() {
     retrievalRecall: mean(results.map((r) => r.retrievalRecall)),
     hallucinatedFileRate: mean(results.map((r) => r.hallucinatedFiles)),
     vagueAskedQuestions: results.find((r) => r.askedQuestions !== null)?.askedQuestions ?? null,
+    criteria: summarizeCriteria(results.flatMap((r) => (r.criteria ? [r.criteria] : []))),
     avgSeconds: results.reduce((a, r) => a + r.ms, 0) / results.length / 1000,
   };
   console.table({
@@ -110,11 +117,17 @@ async function main() {
     'file recall (ticket)': pct(summary.fileRecall), 'file recall (retrieval alone)': pct(summary.retrievalRecall),
     'invented files': pct(summary.hallucinatedFileRate), 'vague req asks questions': String(summary.vagueAskedQuestions),
     'avg seconds': summary.avgSeconds.toFixed(1),
+    'output mode': structured ? (schemaFallbacks ? `schema (${schemaFallbacks} fell back to json)` : 'schema') : 'json',
+    'criteria in Given/When/Then': pct(summary.criteria?.gwtRate ?? null),
+    'tickets with 3-6 criteria': pct(summary.criteria?.countOkRate ?? null),
+    'tickets with a failure case': pct(summary.criteria?.failureCaseRate ?? null),
+    'vague criteria': pct(summary.criteria?.vagueRate ?? null),
   });
+  if (schemaFallbacks) console.warn(`WARNING: Ollama rejected the schema ${schemaFallbacks} time(s) and plain JSON mode was used. Update Ollama for a clean structured run.`);
 
   mkdirSync('eval/results', { recursive: true });
   const file = `eval/results/${new Date().toISOString().replace(/[:.]/g, '-')}_${model.replace(/[^\w.-]/g, '_')}.json`;
-  writeFileSync(file, JSON.stringify({ runAt: new Date().toISOString(), provider, model, promptVersion: PROMPT_VERSION, skills: skillNames, skillsHash, snapshot: snapshotName ?? 'live', repoFiles: memory.paths.length, repoHash: createHash('sha1').update(memory.chunks.map((c) => c.path + c.text).join('\n')).digest('hex').slice(0, 8), retrieval: 'keyword', summary, cases: results }, null, 2));
+  writeFileSync(file, JSON.stringify({ runAt: new Date().toISOString(), provider, model, promptVersion: PROMPT_VERSION, skills: skillNames, skillsHash, snapshot: snapshotName ?? 'live', repoFiles: memory.paths.length, repoHash: createHash('sha1').update(memory.chunks.map((c) => c.path + c.text).join('\n')).digest('hex').slice(0, 8), retrieval: 'keyword', outputMode: structured ? 'schema' : 'json', schemaFallbacks, summary, cases: results }, null, 2));
   console.log(`Saved ${file}`);
 }
 main().catch((e) => { console.error(e); process.exit(1); });

@@ -1,9 +1,8 @@
 import type { TraceInfo } from "../types";
 
 const styles = {
-  panel:
-    "mt-5 rounded-lg border border-slate-200 px-4 py-2 text-sm dark:border-slate-800",
-  summary: "cursor-pointer text-slate-500 dark:text-slate-400",
+  panel: "mt-6 rounded-lg border border-line bg-background px-4 py-3 text-sm",
+  summary: "cursor-pointer text-muted hover:text-body",
   text: "mt-2",
   list: "mt-1 ml-5 list-disc",
   code: "text-xs",

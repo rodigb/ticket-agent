@@ -36,5 +36,21 @@ export const RepoProfileSchema = z.object({
   notes: flexText,
 });
 
+// JSON Schema for Ollama's constrained decoding, derived from TicketSchema so the two cannot drift.
+// io: 'output' makes every field required, so the model must emit all of them. "$schema" and
+// "default" are dropped because they add nothing to the grammar Ollama builds from this.
+const stripKeys = (node: unknown): unknown =>
+  Array.isArray(node)
+    ? node.map(stripKeys)
+    : node && typeof node === 'object'
+      ? Object.fromEntries(
+          Object.entries(node)
+            .filter(([k]) => k !== '$schema' && k !== 'default')
+            .map(([k, v]) => [k, stripKeys(v)]),
+        )
+      : node;
+
+export const ticketJsonSchema = stripKeys(z.toJSONSchema(TicketSchema, { io: 'output' })) as Record<string, unknown>;
+
 export type Ticket = z.infer<typeof TicketSchema>;
 export type RepoProfile = z.infer<typeof RepoProfileSchema>;

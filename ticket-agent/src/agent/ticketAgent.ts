@@ -3,7 +3,7 @@ import type { Skill } from './skills';
 import type { LLMConfig, RepoMemory, RepoProfile, Ticket } from '../types';
 import { askForJSON } from './askForJSON';
 import { profilePrompt, ticketPrompt } from './prompts';
-import { RepoProfileSchema, TicketSchema } from './schemas';
+import { RepoProfileSchema, TicketSchema, ticketJsonSchema } from './schemas';
 
 // Run once after indexing: a compact "what kind of codebase is this" note kept in memory.
 export function buildProfile(memory: RepoMemory, llm: LLMConfig): Promise<RepoProfile> {
@@ -24,15 +24,18 @@ interface GenerateTicketArgs {
   skills: Skill[];
   onAttempt?: (attempt: number) => void;
   onContext?: (info: { chunkPaths: string[]; skillNames: string[] }) => void;
+  // Constrain Ollama's output to the ticket schema. On by default; the eval turns it off to compare.
+  structured?: boolean;
+  onSchemaFallback?: () => void;
 }
 
-export function generateTicket({ requirement, memory, llm, skills, onAttempt, onContext }: GenerateTicketArgs): Promise<Ticket> {
+export function generateTicket({ requirement, memory, llm, skills, onAttempt, onContext, structured = true, onSchemaFallback }: GenerateTicketArgs): Promise<Ticket> {
   const context = memory ? retrieve(memory, requirement) : [];
   onContext?.({ chunkPaths: context.map((c) => c.path), skillNames: skills.map((s) => s.name) });
   return askForJSON(
     llm,
     ticketPrompt({ requirement, profile: memory?.profile ?? null, paths: memory?.paths ?? [], context, skills }),
     TicketSchema,
-    onAttempt,
+    { onAttempt, jsonSchema: structured ? ticketJsonSchema : undefined, onFallback: onSchemaFallback },
   );
 }

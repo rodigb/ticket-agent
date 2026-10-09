@@ -5,10 +5,11 @@ import { parseRepoInput } from "../repo/parseRepo";
 import { buildProfile, generateTicket } from "../agent/ticketAgent";
 import { loadSkillsBrowser } from "../agent/loadSkillsBrowser";
 import { pickSkills } from "../agent/skills";
-import { toJira, toDevOps } from "../export/exporters";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../routes";
 import { SettingsModal } from "../components/Settings";
+import { ExportMenu } from "../components/ExportMenu";
+import { toJira, toDevOps } from "../export/exporters";
 import { TicketEditor } from "../components/TicketEditor";
 import { TracePanel } from "../components/TracePanel";
 import type {
@@ -20,26 +21,30 @@ import type {
 } from "../types";
 
 const styles = {
-  page: "relative mx-auto max-w-3xl px-5 pt-10 pb-16 text-body",
-  topBar: "mb-4 flex items-center justify-between",
-  back: "text-sm text-accent hover:underline",
+  page: "relative mx-auto w-full max-w-7xl px-4 pt-6 pb-16 text-left text-body sm:px-6 sm:pt-10 lg:px-8",
+  topBar: "mb-6 flex items-center justify-between",
+  back: "-ml-3 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium text-accent transition-colors hover:bg-accent/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
   cog: "rounded-full p-2 text-muted transition-colors hover:bg-surface hover:text-body focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-  title: "text-3xl font-semibold tracking-tight",
-  subtitle: "mt-1 mb-8 text-muted",
-  section: "border-t border-line py-5",
-  sectionTitle: "mb-2 text-lg font-semibold",
-  row: "mb-2 flex flex-wrap gap-2",
+  // Important modifiers: the unlayered h1/h2 rules in index.css would otherwise beat Tailwind utilities.
+  sectionTitle: "m-0! text-lg! leading-normal! font-semibold! tracking-normal!",
   control:
-    "mb-2 rounded-md border border-line bg-transparent px-3 py-2 text-body focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
-  rowControl: "grow basis-40",
-  fullControl: "w-full",
+    "mb-3 min-h-40 w-full resize-y rounded-lg border border-line bg-background px-3 py-2.5 text-body placeholder:text-muted/70 transition-colors focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-accent/40",
   button:
-    "rounded-md bg-accent px-4 py-2 font-medium text-accent-foreground hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40",
-  secondaryButton:
-    "rounded-md border border-line px-3 py-2 text-sm hover:bg-surface",
-  note: "text-sm text-muted",
-  error: "text-red-700 dark:text-red-400",
-  ticket: "mt-4 rounded-lg border border-line bg-surface p-5",
+    "inline-flex w-full items-center justify-center rounded-lg bg-accent px-4 py-2.5 font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto",
+  note: "mt-4 flex items-center gap-2 text-sm text-muted",
+  error:
+    "mt-4 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-300",
+  columns:
+    "grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-8",
+  panel: "rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-6",
+  stickyPanel: "lg:sticky lg:top-6",
+  panelHeader:
+    "mb-4 flex min-h-9 flex-wrap items-center justify-between gap-3 border-b border-line pb-4",
+  headerActions: "flex flex-wrap items-center gap-2",
+  toggle:
+    "rounded-lg border border-line px-3 py-1.5 text-sm transition-colors hover:bg-background focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+  empty:
+    "flex flex-col items-center gap-3 rounded-lg border border-dashed border-line px-4 py-12 text-center text-sm text-muted",
 };
 
 export default function TicketPage() {
@@ -54,6 +59,7 @@ export default function TicketPage() {
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [trace, setTrace] = useState<TraceInfo | null>(null);
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  const [detailsOpen, setDetailsOpen] = useState<boolean>(false);
   const [modelsError, setModelsError] = useState<string>("");
   const [status, setStatus] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -151,7 +157,7 @@ export default function TicketPage() {
     <main className={styles.page}>
       <div className={styles.topBar}>
         <Link to={ROUTES.home} className={styles.back}>
-          ← Home
+          <span aria-hidden="true">←</span> Home
         </Link>
         <button
           type="button"
@@ -175,114 +181,122 @@ export default function TicketPage() {
           </svg>
         </button>
       </div>
-      <h1 className={styles.title}>Ticket creation</h1>
-      <p className={styles.subtitle}>
-        Describe the work. Get a ticket that fits your codebase.
-      </p>
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Model</h2>
-        <div className={styles.row}>
-          <p className={`${styles.note} grow self-center`}>
-            {PROVIDERS[provider].label}: {model || "no model selected"}
-            {PROVIDERS[provider].needsKey && !apiKey && " (API key needed)"}
-          </p>
-          <button
-            className={styles.secondaryButton}
-            onClick={() => setSettingsOpen(true)}
-          >
-            Settings
-          </button>
-        </div>
-        {modelsError && <p className={styles.error}>{modelsError}</p>}
-      </section>
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Repository</h2>
-        <div className={styles.row}>
-          <input
-            className={`${styles.control} ${styles.rowControl}`}
-            placeholder="GitHub URL or owner/repo"
-            value={repo}
-            onChange={(e) => {
-              setRepo(e.target.value);
-              const ref = parseRepoInput(e.target.value);
-              setMemory(ref ? loadMemory(ref.slug) : null);
-            }}
-          />
-          <input
-            className={`${styles.control} ${styles.rowControl}`}
-            type="password"
-            placeholder="GitHub token (optional, for private repos)"
-            value={ghToken}
-            onChange={(e) => setGhToken(e.target.value)}
+      <div className={styles.columns}>
+        <section
+          className={`${styles.panel} ${styles.stickyPanel}`}
+          aria-labelledby="requirement-title"
+        >
+          <div className={styles.panelHeader}>
+            <h1 id="requirement-title" className={styles.sectionTitle}>
+              Requirement
+            </h1>
+          </div>
+          <textarea
+            className={styles.control}
+            rows={5}
+            aria-labelledby="requirement-title"
+            placeholder="e.g. Let users reset their password by email"
+            value={requirement}
+            onChange={(e) => setRequirement(e.target.value)}
           />
           <button
             className={styles.button}
-            onClick={index}
-            disabled={!repoRef || !model || !!status}
+            onClick={generate}
+            disabled={!requirement || !model || !!status}
           >
-            {memory ? "Re-index" : "Index repo"}
+            Create ticket
           </button>
-        </div>
-        {repo && !repoRef && (
-          <p className={styles.error}>
-            Enter a GitHub URL such as https://github.com/owner/repo, or
-            owner/repo.
-          </p>
-        )}
-        {repoRef && !memory && (
-          <p className={styles.note}>Will read {repoRef.slug}.</p>
-        )}
-        {memory && (
-          <div className={styles.note}>
-            Remembered {memory.paths.length} files, {memory.chunks.length}{" "}
-            chunks. Stack: {memory.profile?.stack.join(", ") || "unknown"}.
+          {status && (
+            <p className={styles.note} role="status">
+              <svg
+                viewBox="0 0 24 24"
+                width={16}
+                height={16}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                className="animate-spin"
+                aria-hidden="true"
+              >
+                <path d="M12 3a9 9 0 1 0 9 9" />
+              </svg>
+              {status}
+            </p>
+          )}
+          {error && (
+            <p className={styles.error} role="alert">
+              {error}
+            </p>
+          )}
+        </section>
+
+        <section className={styles.panel} aria-labelledby="results-title">
+          <div className={styles.panelHeader}>
+            <h2 id="results-title" className={styles.sectionTitle}>
+              Results
+            </h2>
+            <div className={styles.headerActions}>
+              {ticket && (
+                <button
+                  type="button"
+                  className={styles.toggle}
+                  aria-expanded={detailsOpen}
+                  aria-controls="ticket-details"
+                  onClick={() => setDetailsOpen((o) => !o)}
+                >
+                  {detailsOpen ? "Show less" : "Show more details"}
+                </button>
+              )}
+              <ExportMenu
+                disabled={!ticket}
+                options={[
+                  {
+                    label: "Export for Jira",
+                    hint: "Downloads ticket-jira.json",
+                    onSelect: () =>
+                      ticket && download(toJira(ticket), "ticket-jira.json"),
+                  },
+                  {
+                    label: "Export for Azure DevOps",
+                    hint: "Downloads ticket-devops.json",
+                    onSelect: () =>
+                      ticket &&
+                      download(toDevOps(ticket), "ticket-devops.json"),
+                  },
+                ]}
+              />
+            </div>
           </div>
-        )}
-      </section>
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Requirement</h2>
-        <textarea
-          className={`${styles.control} ${styles.fullControl}`}
-          rows={5}
-          placeholder="e.g. Let users reset their password by email"
-          value={requirement}
-          onChange={(e) => setRequirement(e.target.value)}
-        />
-        <button
-          className={styles.button}
-          onClick={generate}
-          disabled={!requirement || !model || !!status}
-        >
-          Create ticket
-        </button>
-      </section>
-
-      {status && <p className={styles.note}>{status}</p>}
-      {error && <p className={styles.error}>{error}</p>}
-
-      {ticket && (
-        <article className={styles.ticket}>
-          <TicketEditor ticket={ticket} onChange={setTicket} />
-          <div className={styles.row}>
-            <button
-              className={styles.button}
-              onClick={() => download(toJira(ticket), "ticket-jira.json")}
-            >
-              Export for Jira
-            </button>
-            <button
-              className={styles.button}
-              onClick={() => download(toDevOps(ticket), "ticket-devops.json")}
-            >
-              Export for Azure DevOps
-            </button>
-          </div>
-          {trace && <TracePanel trace={trace} />}
-        </article>
-      )}
+          {ticket ? (
+            <div id="ticket-details">
+              <TicketEditor
+                ticket={ticket}
+                onChange={setTicket}
+                expanded={detailsOpen}
+              />
+              {detailsOpen && trace && <TracePanel trace={trace} />}
+            </div>
+          ) : (
+            <div className={styles.empty}>
+              <svg
+                viewBox="0 0 24 24"
+                width={32}
+                height={32}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6" />
+              </svg>
+              <p>Your ticket will appear here once you create it.</p>
+            </div>
+          )}
+        </section>
+      </div>
       <SettingsModal
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
@@ -295,6 +309,30 @@ export default function TicketPage() {
         onApiKeyChange={setApiKey}
         modelsError={modelsError}
         onRefreshModels={() => loadModels(provider)}
+        repo={repo}
+        onRepoChange={(value) => {
+          setRepo(value);
+          const ref = parseRepoInput(value);
+          setMemory(ref ? loadMemory(ref.slug) : null);
+        }}
+        repoInvalid={!!repo && !repoRef}
+        repoNote={
+          memory
+            ? `Remembered ${memory.paths.length} files, ${
+                memory.chunks.length
+              } chunks. Stack: ${
+                memory.profile?.stack.join(", ") || "unknown"
+              }.`
+            : repoRef
+              ? `Will read ${repoRef.slug}.`
+              : ""
+        }
+        ghToken={ghToken}
+        onGhTokenChange={setGhToken}
+        indexLabel={memory ? "Re-index" : "Index repo"}
+        canIndex={!!repoRef && !!model && !status}
+        onIndex={index}
+        status={status}
       />
     </main>
   );
