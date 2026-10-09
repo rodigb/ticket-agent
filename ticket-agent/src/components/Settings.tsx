@@ -1,6 +1,32 @@
 import { useEffect, useRef } from "react";
 import { PROVIDERS } from "../llm/providers";
+import {
+  classifyRepoSize,
+  formatRepoSize,
+  type RepoSizeLevel,
+} from "../repo/repo";
 import type { ProviderId } from "../types";
+
+const SIZE_STYLE: Record<
+  RepoSizeLevel,
+  { label: string; text: string; dot: string }
+> = {
+  small: {
+    label: "small",
+    text: "text-green-700 dark:text-green-400",
+    dot: "bg-green-600 dark:bg-green-400",
+  },
+  medium: {
+    label: "medium",
+    text: "text-yellow-700 dark:text-yellow-400",
+    dot: "bg-yellow-500 dark:bg-yellow-400",
+  },
+  large: {
+    label: "large",
+    text: "text-red-700 dark:text-red-400",
+    dot: "bg-red-600 dark:bg-red-400",
+  },
+};
 
 const styles = {
   // m-auto: Tailwind's reset removes the browser's default centring of <dialog>.
@@ -38,6 +64,9 @@ interface Props {
   repo: string;
   onRepoChange: (r: string) => void;
   repoInvalid: boolean;
+  repoSizeKb: number | null;
+  repoSizeError: string;
+  repoSizeLoading: boolean;
   repoNote: string;
   ghToken: string;
   onGhTokenChange: (t: string) => void;
@@ -167,6 +196,33 @@ export function SettingsModal(p: Props) {
           </p>
         )}
         {p.repoNote && <p className={styles.hint}>{p.repoNote}</p>}
+        {p.repoSizeLoading && (
+          <p className={styles.hint}>Checking repo size…</p>
+        )}
+        {p.repoSizeKb !== null && (
+          <p className={styles.hint}>
+            Repo size:{" "}
+            <span
+              className={`font-semibold ${
+                SIZE_STYLE[classifyRepoSize(p.repoSizeKb)].text
+              }`}
+            >
+              <span
+                className={`mr-1 inline-block size-2 rounded-full ${
+                  SIZE_STYLE[classifyRepoSize(p.repoSizeKb)].dot
+                }`}
+                aria-hidden="true"
+              />
+              {formatRepoSize(p.repoSizeKb)} (
+              {SIZE_STYLE[classifyRepoSize(p.repoSizeKb)].label})
+            </span>
+          </p>
+        )}
+        {p.repoSizeError && (
+          <p className={styles.error} role="alert">
+            {p.repoSizeError}
+          </p>
+        )}
 
         <label className={styles.label} htmlFor="settings-gh-token">
           GitHub token (optional)

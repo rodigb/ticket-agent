@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { PROVIDERS, listOllamaModels } from "../llm/providers";
 import { indexRepo, loadMemory, saveMemory } from "../repo/repo";
 import { parseRepoInput } from "../repo/parseRepo";
+import { useRepoSummary } from "../repo/useRepoSummary";
 import { buildProfile, generateTicket } from "../agent/ticketAgent";
 import { loadSkillsBrowser } from "../agent/loadSkillsBrowser";
 import { pickSkills } from "../agent/skills";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ROUTES } from "../routes";
 import { SettingsModal } from "../components/Settings";
+import { RepoSummary } from "../components/RepoSummary";
 import { ExportMenu } from "../components/ExportMenu";
 import { toJira, toDevOps } from "../export/exporters";
 import { TicketEditor } from "../components/TicketEditor";
@@ -48,13 +50,19 @@ const styles = {
 };
 
 export default function TicketPage() {
+  // The home screen hands over the chosen repo through router state.
+  const startRepo =
+    (useLocation().state as { repo?: string } | null)?.repo ?? "";
   const [provider, setProvider] = useState<ProviderId>("ollama");
   const [model, setModel] = useState<string>("");
   const [models, setModels] = useState<string[]>([]);
   const [apiKey, setApiKey] = useState<string>("");
-  const [repo, setRepo] = useState<string>("");
+  const [repo, setRepo] = useState<string>(startRepo);
   const [ghToken, setGhToken] = useState<string>("");
-  const [memory, setMemory] = useState<RepoMemory | null>(null);
+  const [memory, setMemory] = useState<RepoMemory | null>(() => {
+    const ref = parseRepoInput(startRepo);
+    return ref ? loadMemory(ref.slug) : null;
+  });
   const [requirement, setRequirement] = useState<string>("");
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [trace, setTrace] = useState<TraceInfo | null>(null);
@@ -65,6 +73,7 @@ export default function TicketPage() {
   const [error, setError] = useState<string>("");
 
   const repoRef = parseRepoInput(repo);
+  const summary = useRepoSummary(repoRef?.slug ?? null, ghToken);
 
   const llm: LLMConfig = { provider, model, apiKey };
 
@@ -181,6 +190,7 @@ export default function TicketPage() {
           </svg>
         </button>
       </div>
+      <RepoSummary summary={summary} className="mb-6" />
       <div className={styles.columns}>
         <section
           className={`${styles.panel} ${styles.stickyPanel}`}
@@ -316,6 +326,9 @@ export default function TicketPage() {
           setMemory(ref ? loadMemory(ref.slug) : null);
         }}
         repoInvalid={!!repo && !repoRef}
+        repoSizeKb={summary.info?.sizeKb ?? null}
+        repoSizeError={summary.error}
+        repoSizeLoading={summary.loading}
         repoNote={
           memory
             ? `Remembered ${memory.paths.length} files, ${

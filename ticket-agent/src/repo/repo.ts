@@ -5,6 +5,9 @@ const RAW = 'https://raw.githubusercontent.com';
 export const SKIP = /(^|\/)(node_modules|dist|build|\.git|vendor)\/|\.(png|jpe?g|gif|svg|ico|lock|woff2?|pdf|zip|map)$|\.min\./i;
 export const KEY = /(^|\/)(README\.md|package\.json|pyproject\.toml|requirements\.txt|go\.mod|pom\.xml|Dockerfile|CONTRIBUTING\.md)$/i;
 const MEM_KEY = (repo: string) => `ticket-agent:memory:${repo.toLowerCase()}`;
+// The indexer reads at most this many files, skipping any at or above this size.
+export const MAX_INDEXED_FILES = 120;
+export const MAX_FILE_BYTES = 20000;
 
 // Only the GitHub API fields we actually use
 interface GitHubRepoMeta { default_branch: string; description: string | null }
@@ -34,6 +37,98 @@ export function describeGitHubError(status: number, headers: { get(name: string)
 }
 
 const encodePath = (path: string): string => path.split('/').map(encodeURIComponent).join('/');
+
+// GitHub reports repo size in KB. Thresholds are a rough guide to how much of a repo the in-browser indexer can cover.
+export type RepoSizeLevel = 'small' | 'medium' | 'large';
+export const MEDIUM_REPO_KB = 10 * 1024;
+export const LARGE_REPO_KB = 100 * 1024;
+
+export function classifyRepoSize(kb: number): RepoSizeLevel {
+  if (kb >= LARGE_REPO_KB) return 'large';
+  if (kb >= MEDIUM_REPO_KB) return 'medium';
+  return 'small';
+}
+
+export function formatRepoSize(kb: number): string {
+  if (kb >= 1024 * 1024) return `${(kb / 1024 / 1024).toFixed(1)} GB`;
+  if (kb >= 1024) return `${(kb / 1024).toFixed(1)} MB`;
+  return `${kb} KB`;
+}
+
+export async function fetchRepoSize(repo: string, token: string, signal?: AbortSignal): Promise<number> {
+  const r = await fetch(`${GH}/repos/${repo}`, { headers: token ? { Authorization: `Bearer ${token}` } : {}, signal });
+  if (!r.ok) throw new Error(describeGitHubError(r.status, r.headers));
+  const meta: { size: number } = await r.json();
+  return meta.size;
+}
+
+export interface RepoInfo {
+  fullName: string;
+  description: string | null;
+  language: string | null;
+  stars: number;
+  sizeKb: number;
+  defaultBranch: string;
+  pushedAt: string;
+}
+
+export async function fetchRepoInfo(repo: string, signal?: AbortSignal, token = ''): Promise<RepoInfo> {
+  const r = await fetch(`${GH}/repos/${repo}`, { headers: token ? { Authorization: `Bearer ${token}` } : {}, signal });
+  if (!r.ok) throw new Error(describeGitHubError(r.status, r.headers));
+  const m: {
+    full_name: string;
+    description: string | null;
+    language: string | null;
+    stargazers_count: number;
+    size: number;
+    default_branch: string;
+    pushed_at: string;
+  } = await r.json();
+  return {
+    fullName: m.full_name,
+    description: m.description,
+    language: m.language,
+    stars: m.stargazers_count,
+    sizeKb: m.size,
+    defaultBranch: m.default_branch,
+    pushedAt: m.pushed_at,
+  };
+}
+
+export interface RepoDigest {
+  readableFiles: number; // files the indexer is allowed to read
+  indexedFiles: number; // how many of those it will actually read
+  truncated: boolean; // GitHub cut the file list short because the repo is huge
+}
+
+export async function fetchRepoDigest(
+  repo: string,
+  branch: string,
+  signal?: AbortSignal,
+  token = '',
+): Promise<RepoDigest> {
+  const r = await fetch(`${GH}/repos/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    signal,
+  });
+  if (!r.ok) throw new Error(describeGitHubError(r.status, r.headers));
+  const tree: GitHubTree = await r.json();
+  const readableFiles = tree.tree.filter(
+    (f) => f.type === 'blob' && !SKIP.test(f.path) && (f.size ?? 0) < MAX_FILE_BYTES,
+  ).length;
+  return { readableFiles, indexedFiles: Math.min(readableFiles, MAX_INDEXED_FILES), truncated: tree.truncated };
+}
+
+export type DigestLevel = 'easy' | 'moderate' | 'hard';
+
+// How much of the repo's readable code the agent will see: the more it covers, the better grounded the tickets.
+export function rateDigestibility(d: RepoDigest): DigestLevel {
+  if (d.truncated || d.readableFiles === 0) return 'hard';
+  const coverage = d.indexedFiles / d.readableFiles;
+  if (coverage >= 0.75) return 'easy';
+  if (coverage >= 0.35) return 'moderate';
+  return 'hard';
+}
 
 export async function indexRepo(
   repo: string,
@@ -65,12 +160,12 @@ export async function indexRepo(
   ).json();
 
   const files = tree.tree.filter(
-    (f) => f.type === 'blob' && !SKIP.test(f.path) && (f.size ?? 0) < 20000,
+    (f) => f.type === 'blob' && !SKIP.test(f.path) && (f.size ?? 0) < MAX_FILE_BYTES,
   );
   const chosen = [
     ...files.filter((f) => KEY.test(f.path)),
     ...files.filter((f) => !KEY.test(f.path)),
-  ].slice(0, 120);
+  ].slice(0, MAX_INDEXED_FILES);
 
   const chunks: Chunk[] = [];
   for (let i = 0; i < chosen.length; i++) {
